@@ -53,6 +53,10 @@ models:
                 stage:
                    cdp:
                         tags: ["cdp_stage_usdatapractice","stage"]
-                        schema: "cdp"
-
+                        schema: "cdp"                        
+                   core:
+                        tags: ["core_stage_usdatapractice","core_stage"]
+                        schema: "core"
+                        
+                
         

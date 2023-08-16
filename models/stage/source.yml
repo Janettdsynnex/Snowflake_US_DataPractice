@@ -35,11 +35,12 @@ sources:
       - name: TNMATSLS  
       - name: TNCBPCUST
       - name: TNCBPCUST_TXT
+      
 
     
   - name: us_cdp_ecc_68
     database: "ANALYTICS"
-    schema: "EDW_SAP_BW_US_68"
+    schema: "EDW_SAP_ECC_US_68"
     tables:
       - name: MAKT
       

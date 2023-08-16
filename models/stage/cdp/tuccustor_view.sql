@@ -91,8 +91,8 @@ select
     ,"/BIC/TUCVENCLN" as tucvencln
     ,"/BIC/TUCVENCLS" as tucvencls
     ,"/BIC/TUCZZGMNR" as tuczzgmnr
-    ,"/BIC/TUKUMSA1" as  tukumsa1
-    ,"/BIC/TUYUWAERR" as tuyuwaerr
+    ,"/BIC/TUKUMSA1" as  tucumsa1
+    ,"/BIC/TUYUWAERR" as tucuwaerr
 FROM {{ source('us_cdp_bw_46','TUCCUSTOR') }}  t1
 left join {{ source('us_cdp_bw_46','TUCINDUSY_TXT') }}  t2
   on t1."/BIC/TUCINDUSY" = t2."/BIC/TUCINDUSY"
