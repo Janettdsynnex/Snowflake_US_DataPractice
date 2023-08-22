@@ -51,3 +51,8 @@ sources:
       - name: DIM_PUB_CUSTOMER_INFO_VIEW_US
       - name: DIM_PUB_CUSTOMER_XREF_US
       
+  - name: us_cdp
+    database: "US_DATAPRACTICE"
+    schema: "CDP"
+    tables:
+     - name: PROFIT_CTR_HIER

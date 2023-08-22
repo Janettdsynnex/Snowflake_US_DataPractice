@@ -41,22 +41,16 @@ models:
         columns: true
     td_usdatapractice:
       # Applies to all files under models/example/
-
-
-        us_datapractice:
-                tags: ["us_datapractice"]
-
-                base:
-                   materialized: view
-                   tags: ["cdp_base_usdatapractice","base"]
-
-                stage:
-                   cdp:
-                        tags: ["cdp_stage_usdatapractice","stage"]
-                        schema: "cdp"                        
-                   core:
-                        tags: ["core_stage_usdatapractice","core_stage"]
-                        schema: "core"
-                        
+      stage:
+        cdp:
+                materialized: view
+                tags: ["cdp_usdatapractice","cdp_stage"]
+                database: "us_datapractice"
+                schema: "cdp"
+               
+        core:
+               materialized: view
+               tags: ["cdp_usdatapractice","core_stage"]
+               database: "us_datapractice"
+               schema: "core"  
                 
-        
