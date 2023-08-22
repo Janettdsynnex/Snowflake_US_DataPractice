@@ -1,0 +1,58 @@
+version: 2
+
+sources:
+  - name: us_cdp_bw_46
+    database: "ANALYTICS"
+    schema: "EDW_SAP_BW_US_46"
+
+
+
+
+    tables:
+      - name: TUCCUSTOR
+      - name: TUCINDUSY_TXT
+      - name: TUCCUSTSS
+      - name: TUCMATERL
+      - name: TUCMATSAS
+      - name: TUBLIO001
+      - name: TUCDOCTYX
+      - name: TUCITEMCG
+      - name: TUCBILLTE
+      - name: TUCKTGRM
+      - name: TUCCUSTCC
+      - name: RSTHIERNODE
+      - name: TUCPROFIR_HIER
+      - name: TUCPROFIR_TXT
+
+
+  - name: us_cdp_bw_68
+    database: "ANALYTICS"
+    schema: "EDW_SAP_BW_US_68"
+    tables:
+      - name: TNBLIO02 
+      - name: TNCUST_SL 
+      - name: TNMATERIL
+      - name: TNMATSLS  
+      - name: TNCBPCUST
+      - name: TNCBPCUST_TXT
+      
+
+    
+  - name: us_cdp_ecc_68
+    database: "ANALYTICS"
+    schema: "EDW_SAP_ECC_US_68"
+    tables:
+      - name: MAKT
+      
+  - name: us_cdp_cis_us
+    database: "ANALYTICS"
+    schema: "EDW_CIS_US"
+    tables:
+      - name: DIM_PUB_CUSTOMER_INFO_VIEW_US
+      - name: DIM_PUB_CUSTOMER_XREF_US
+      
+  - name: us_cdp
+    database: "US_DATAPRACTICE"
+    schema: "CDP"
+    tables:
+     - name: PROFIT_CTR_HIER
