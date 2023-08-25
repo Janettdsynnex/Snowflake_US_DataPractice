@@ -47,6 +47,6 @@ LEFT JOIN {{ ref('tuccustss_view') }} AS T2
   AND T1.TNECUSNU = T2.TUCCUSTSS
 
 LEFT JOIN {{ ref('tuccustor_view') }} AS T3
-  ON T2.TUCCUSTSS = T3.TUCCUSTOR
+  ON T2.TUCCUSTSS = T3.TUCCUSTOR AND T3.SOURSYSTEM = 'A2'
 
 
