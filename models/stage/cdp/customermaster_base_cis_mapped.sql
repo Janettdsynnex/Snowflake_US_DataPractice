@@ -5,43 +5,53 @@
     )
 }}
  
-select
+with cust46 as (
+        select 
+          a.cust_no 
+         ,b.xref as ltd_46_cust_no
+        from
+        {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }}  a
+        join  {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_XREF_US') }}   b
+          on a.cust_no = b.cust_no
+          and b.xref_type = 'LTD_CUST'
+          and b.xref_no = '1'  )
 
-case 
-    when T2.TUCCUSTSS is not NULL 
-     and T2.TUCCUSTSS != '' then T2.TUCCUSTSS 
-    else NULL 
-end as TUCCUSTOR_46,
-    
-t1.TUCSALESG,
-t1.SOURSYSTEM,
-t1.OBJVERS,
-t1.CIS_CUST_NO,
-t1.CIS_CUST_NAME,
-t1.LTD_46_CUST_NO,
-t1.MCUST_NAME,
-t1.INDUSTRY,
-t1.POSTAL_CD,
-t1.CITY,
-t1.ADDRESS,
-t1.STATE,
-t1.PHONE_NO,
-t1.COUNTRY,
-t1.DELETION_IND,
-t1.CUST_TYPE_DESCR as CUST_TYPE,
-T2.TUCHIEA02,
-T2.TUCHIEA01,
-T2.TUCHIEA03,
-T2.TUCHIEB03,
-T2.TUCCUSTGP,
-T3."/BIC/TUCKONZS" as TUCKONZS,
-T3."/BIC/TUCNAMEE" as GROUPKEYNAME,
-T3."/BIC/TUCINDUSY" as TUCINDUSY
-from "US_DATAPRACTICE"."CDP"."CUSTOMERMASTER_BASE_CIS" as T1
+, cust68 as (
+        select 
+          a.cust_no          
+         ,b.xref as ltd_68_cust_no
+        from
+          {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }}  a
+        join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_XREF_US') }}  b
+          on a.cust_no = b.cust_no
+          and b.xref_type = 'LTD_CUST'
+          and b.xref_no = '68'  )   
+        
 
-left join TUCCUSTSS as T2
-  on T1.TUCSALESG = T2.TUCSALESG
-  and T1.LTD_46_CUST_NO = LTRIM(T2.TUCCUSTSS,'0')
+select 
+'0100' as TUCSALESG
+,'CIS' as SOURSYSTEM
+,'A' as OBJVERS
+,cis_cust.cust_no as CIS_CUST_NO
+,cis_cust.cust_name as CIS_CUST_NAME
+,cust46.ltd_46_cust_no
+,cust68.ltd_68_cust_no
+,mcust_name
+,mcust_no
+,division_desc as industry
+,bill_to_cust_addr as address
+,bill_to_cust_city as city
+,bill_to_cust_state as state
+,bill_to_cust_country as country
+,bill_to_cust_zip as postal_cd
+,bill_to_contact_phone as phone_no
+,is_discontinued as deletion_ind
+--,is_restricted
+,cust_type_descr
+,division_desc
+from  {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }}  as cis_cust
 
-left join TUCCUSTOR as T3
-  on T2.TUCCUSTSS = T3."/BIC/TUCCUSTOR"
+left join cust46
+  on cis_cust.cust_no = cust46.cust_no 
+left join cust68
+  on cis_cust.cust_no = cust68.cust_no
