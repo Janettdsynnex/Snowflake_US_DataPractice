@@ -50,9 +50,18 @@ sources:
     tables:
       - name: DIM_PUB_CUSTOMER_INFO_VIEW_US
       - name: DIM_PUB_CUSTOMER_XREF_US
+      - name: DM_PUB_PART_INFO_VIEW_US
+      - name: DM_PUB_VENDOR_INFO_VIEW_US
+      - name: DIM_PUB_BIZ_SEGMENT_HIERARCHY_US
       
   - name: us_cdp
     database: "US_DATAPRACTICE"
     schema: "CDP"
     tables:
      - name: PROFIT_CTR_HIER
+     - name: GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW
+     - name: TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW
+     
+
+
+  
