@@ -317,11 +317,13 @@ case
 end as MATERIAL_LVL_ACTIVITY,
 
 SYSDATE() as UPDATE_DATE_UTC,
-NULL as ADVANCED_SOLUTIONS_SALES_ORG
+NULL as ADVANCED_SOLUTIONS_SALES_ORG,
+'4.6' AS ORIGINAL_SOURCE
 from {{ source('us_cdp_bw_46','TUCMATERL') }}  as t1 
 join {{ source('us_cdp_bw_46','TUCMATSAS') }} as t3 
   on t1."/BIC/TUCMATERL" = t3."/BIC/TUCMATSAS"
   and t1.SOURSYSTEM = t3.SOURSYSTEM
+  --and t1.soursystem = 'A3'
   and  t3."/BIC/TUCDISTRN" = '00'    
 
 left join t6
@@ -618,7 +620,8 @@ case
     end as MATERIAL_LVL_ACTIVITY
 
 ,SYSDATE() as UPDATE_DATE_UTC
-,t4."/BIC/TNSALEORG" as  ADVANCED_SOLUTIONS_SALES_ORG
+,t4."/BIC/TNSALEORG" as  ADVANCED_SOLUTIONS_SALES_ORG,
+'6.8' AS ORIGINAL_SOURCE
 from  {{ source('us_cdp_bw_68','TNMATERIL') }}  as t1
 join  {{ source('us_cdp_bw_68','TNMATSLS') }} t4
   on t1."/BIC/TNMATERIL" = t4."/BIC/TNMATSLS"         
@@ -911,7 +914,8 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 , NULL as COUNTRY_LVL_ACTIVITY
 , NULL as MATERIAL_LVL_ACTIVITY
 , SYSDATE() as UPDATE_DATE_UTC
-, NULL as ADVANCED_SOLUTIONS_SALES_ORG
+, NULL as ADVANCED_SOLUTIONS_SALES_ORG,
+'CIS' AS ORIGINAL_SOURCE
 from {{source('us_cdp_cis_us','DM_PUB_PART_INFO_VIEW_US') }} matl
 left join {{ source('us_cdp_cis_us', 'DM_PUB_VENDOR_INFO_VIEW_US')}} vend
   on matl.vend_no = vend.vend_no
