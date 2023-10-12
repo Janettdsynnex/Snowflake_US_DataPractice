@@ -1,6 +1,6 @@
 {{
      config(
-         alias = 'billing',
+         alias = 'billing_full',
          materialized = 'table'
 
      )
