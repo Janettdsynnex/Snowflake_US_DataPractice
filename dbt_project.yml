@@ -45,27 +45,13 @@ models:
         cdp:
                 materialized: view
                 tags: ["cdp_usdatapractice","cdp_stage"]
-             #  database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
+                database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
                 database: "us_datapractice"
                 schema: "cdp"
                
         core:
                materialized: table
                tags: ["cdp_usdatapractice","core_stage",]
-            # database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
+               database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
                database: "us_datapractice"
                schema: "core"  
-
-        cdp:
-                materialized: view
-                tags: ["cdp_usdatapractice","cdp_stage_dev"]
-             #  database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
-                database: "us_datapractice_dev"
-                schema: "cdp"
-               
-        core:
-               materialized: table
-               tags: ["cdp_usdatapractice","core_stage_dev",]
-            # database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
-               database: "us_datapractice_dev"
-               schema: "core" 
