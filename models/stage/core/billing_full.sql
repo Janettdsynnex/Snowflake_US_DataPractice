@@ -1113,7 +1113,7 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , NULL as BILL_TO_PARTY
 , NULL as SHIP_TO_PARTY
 , NULL as ITEM_TYPE
-, pc.LEVEL_4_NAME as PROFIT_CENTER
+, to_char(pc.LEVEL_4_NAME) as PROFIT_CENTER
 , NULL as PROD_HRCHY
 , NULL as COMMISSION_GRP
 , NULL as PRICING_EXCHANGE_RATE_DATE
@@ -1137,8 +1137,8 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , NULL as APPLICATION_COMPONENT
 , NULL as BW_TRANSACTION_KEY
 , to_char(cust.division) as SUPER_SALES_AREA
-, cust.cust_type as SALES_AREA
-, cust.sales_terr as SALES_EXECUTIVE
+, to_char(cust.cust_type) as SALES_AREA
+, to_char(cust.sales_terr) as SALES_EXECUTIVE
 , NULL as CUST_HRCHY_LVL_4
 , NULL as CUST_HRCHY_LVL_5
 , NULL as ACCNT_ASSIGN_GRP_MATERIAL
@@ -1147,7 +1147,7 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , NULL as SHIPPING_CONDS
 , NULL as REF_DOC_NBR
 , NULL as RULE_IN_BILL_PLAN
-, matl.short_desc as SALES_ORDER_ITEM_SHORT
+, to_char(matl.short_desc) as SALES_ORDER_ITEM_SHORT
 , NULL as MANUAL_PRICE_CHANGE
 , NULL as PRECEDING_DOC_CAT
 , NULL as ERMA_NBR
@@ -1172,7 +1172,7 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , NULL as EXCHANGE_RATE_FI_POSTINGS
 , NULL as REBATE_BASIS_1
 , NULL as GROSS_WEIGHT
-, inv.ship_qty as BILLED_QTY_SALES_UNITS
+, to_char(inv.ship_qty) as BILLED_QTY_SALES_UNITS
 , NULL as BILL_QTY_BASE_UNITS
 , NULL as BILLED_QTY_ORIGINAL
 , NULL as EXCHANGE_RATE_PRICING_STATS
@@ -1250,8 +1250,8 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , NULL as MATERIAL_STORAGE_LOC
 , NULL as RESELLER_ID_CC
 , NULL as RESELLER_ID_SS
-, eu.EU_LOC_ADDRESS1 as END_USER_DETAIL_INFO
-, inv.SHIP_TO_ADDR as SHIP_TO_DETAIL_INFO
+, to_char(eu.EU_LOC_ADDRESS1) as END_USER_DETAIL_INFO
+, to_char(inv.SHIP_TO_ADDR) as SHIP_TO_DETAIL_INFO
 , NULL as USAGE_IND_HEADER
 , NULL as POD_RELEVANT
 , NULL as REGIONAL_SALES_ITEM
@@ -1513,7 +1513,7 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , to_char(from_ref_type) as ELECT_COMMERCE_GRP
 , to_char(inv.date_flag) as BILL_DOC_DATE
 , NULL as LOADING_DATE
-, inv.CUST_NAME as CUST_NAME
+, to_char(inv.CUST_NAME) as CUST_NAME
 , NULL as ACCNT_TYPE
 , to_char(inv.MASTER_CUST_NO) as GROUPKEY
 , NULL as SBU_HRCHY_L0
@@ -1525,14 +1525,14 @@ md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(
 , NULL as SBU_HRCHY_L2_TXT
 , NULL as SBU_HRCHY_L3_TXT
 , NULL as SBU_HRCHY_L4_TXT
-, pc.SOLUTION_CODE as TM1_HRCHY_L1
+, to_char(pc.SOLUTION_CODE) as TM1_HRCHY_L1
 , to_char(pc.LEVEL_1_SEG_ID) as TM1_HRCHY_L2
 , to_char(pc.LEVEL_2_SEG_ID) as TM1_HRCHY_L3
 , to_char(pc.LEVEL_3_SEG_ID) as TM1_HRCHY_L4
-, inv.UNIVERSAL_VEND_NAME as GLBL_MFR
-, inv.FAMILY as PROD_FAMILY
-, inv.CATEGORY as PROD_CLASS
-, matl.SUB_CATEGORY as PROD_SUBCLASS
+, to_char(inv.UNIVERSAL_VEND_NAME) as GLBL_MFR
+, to_char(inv.FAMILY) as PROD_FAMILY
+, to_char(inv.CATEGORY) as PROD_CLASS
+, to_char(matl.SUB_CATEGORY) as PROD_SUBCLASS
 , SYSDATE() as UPDATE_DATE_UTC
 from {{ source('us_cdp_cis_us','DWD_DISTY_COMMON_SALES_DETAIL_DI_US') }}   inv
 left join {{ source('us_cdp_cis_us','DM_PUB_PART_INFO_VIEW_US') }}   matl
