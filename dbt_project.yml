@@ -39,7 +39,7 @@ models:
     +persist_docs:
         relation: true
         columns: true
-    td_usdatapractice:
+    techdata:
       # Applies to all files under models/example/
       stage:
         cdp:
