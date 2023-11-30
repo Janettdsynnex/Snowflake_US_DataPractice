@@ -2,7 +2,6 @@
      config(
          alias = 'customer_master',
          materialized = 'table'
-
      )
  }}
 
