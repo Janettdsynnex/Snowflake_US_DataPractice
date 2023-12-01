@@ -314,8 +314,8 @@ NULL AS BUY_BACK_TRADE_IN,
 NULL AS AFFORDABILITY_PORTAL, 
 NULL AS CUST_UNWILLING,
 SYSDATE() as UPDATE_DATE_UTC
-  FROM    {{ ref('customermaster_base_68_mapped') }}   AS T1
---FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68_MAPPED   AS T1
+  --FROM    {{ ref('customermaster_base_68_mapped') }}   AS T1
+FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68_MAPPED   AS T1
 LEFT JOIN cust_xref
   ON ltrim(T1.TNCBPCUST,0) = cust_xref.xref
   AND cust_xref.xref_no = '68'
