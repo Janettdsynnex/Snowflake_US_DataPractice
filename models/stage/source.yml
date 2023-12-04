@@ -69,6 +69,15 @@ sources:
      - name: PROFIT_CTR_HIER
      - name: GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW
      - name: TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW
+     - name: CUSTOMERMASTER_BASE_68 
+     - name: CUSTOMERMASTER_BASE_68_MAPPED
+     - name: CUSTOMERMASTER_BASE_CIS
+     - name: CUSTOMERMASTER_BASE_CIS_MAPPED 
+     - name: TNCBPCUST_VIEW
+     - name: TUCCUSTOR_VIEW
+     - name: TUCCUSTSS_VIEW
+     
+
      
      
 
