@@ -41,6 +41,9 @@ models:
         columns: true
     techdata:
       # Applies to all files under models/example/
+    us_datapractice:
+      tags: ["us_datapractice"]
+
       stage:
         cdp:
             materialized: view
@@ -49,5 +52,5 @@ models:
                
         core:
             materialized: table
-            tags: ["core_stage",]
+            tags: ["core_stage"]
             schema: "core"  
