@@ -1,6 +1,6 @@
 {{
      config(
-         alias = 'billing_full',
+         alias = 'billing_68',
          materialized = 'table'
 
      )
@@ -59,7 +59,7 @@ cis_cust_xref as (
         where rn = 1
                    )
 
-select 
+/*select 
 md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYSTEM, t1.RECORDMODE)) as BILLING_KEY
 ,md5(t1."/BIC/TUCPROFIR") as PROFIT_CENTER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM, 'US01', 'US01', t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as CUSTOMER_MASTER_KEY
@@ -669,7 +669,7 @@ left join cis_cust_xref
   
 union all 
 -- part 2 SAP 6.8
-
+*/
 select 
 md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", "/BIC/TNBILL_NM", BILL_ITEM, t68_1.SOURSYSTEM, '')) as BILLING_KEY
 ,md5("/BIC/TNPROFITC") as PROFIT_CENTER_MASTER_KEY
@@ -1191,7 +1191,7 @@ left join cis_cust_xref
 left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
   and matl1.soursystem = 'A2'
-
+/*
  union all 
  --part 3
 select 
@@ -1690,3 +1690,4 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   on to_char(inv.date_flag) = dt."/BIC/TUCTCDAYS"
   and dt."/BIC/TUCCOMPCE" = '0100'
   and dt."FISCVARNT" = 'Z1'
+*/

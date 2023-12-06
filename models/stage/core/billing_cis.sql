@@ -1,6 +1,6 @@
 {{
      config(
-         alias = 'billing_full',
+         alias = 'billing_cis',
          materialized = 'table'
 
      )
@@ -58,7 +58,7 @@ cis_cust_xref as (
           on xref.cust_no = cust.cust_no
         where rn = 1
                    )
-
+/*
 select 
 md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYSTEM, t1.RECORDMODE)) as BILLING_KEY
 ,md5(t1."/BIC/TUCPROFIR") as PROFIT_CENTER_MASTER_KEY
@@ -1193,7 +1193,7 @@ left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   and matl1.soursystem = 'A2'
 
  union all 
- --part 3
+ --part 3 */
 select 
 md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(inv.ORDER_TYPE))) as pkey_billing
 ,md5(concat('CIS US', to_char(matl.vpl_no))) as fkey_profit_center
