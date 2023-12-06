@@ -1,6 +1,6 @@
 {{
      config(
-         alias = 'billing_full',
+         alias = 'billing_46',
          materialized = 'table'
 
      )
@@ -67,10 +67,10 @@ md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYST
 ,t1."/BIC/TUCSOLDTO" as RESELLER_ID_46
 ,NVL(cis_cust_xref.cust_no, t1."/BIC/TUCSOLDTO") as RESELLER_ID_COMBINED
 ,cust.TNCBPCUST as RESELLER_ID_68
-,NULL as IP_CHARGEBACK_DOC_ITEM
-,NULL as IP_CHARGEBACK_DOC_NBR
-,NULL as IP_CHARGEBACK_LOG_DOC_NBR
-,NULL as IP_CHARGEBACK_LOG_TYPE
+,'' as IP_CHARGEBACK_DOC_ITEM
+,'' as IP_CHARGEBACK_DOC_NBR
+,'' as IP_CHARGEBACK_LOG_DOC_NBR
+,'' as IP_CHARGEBACK_LOG_TYPE
 ,t1."/BIC/TUCBILLNM" as BILL_DOC
 ,t1."/BIC/TUCBILLIM" as BILL_ITEM
 ,t1.SOURSYSTEM
@@ -666,7 +666,7 @@ left join cis_cust_xref
   ON ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
   AND cis_cust_xref.xref_no = '1'
 
-  
+  /*
 union all 
 -- part 2 SAP 6.8
 
@@ -685,7 +685,7 @@ md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", 
 ,t68_1."/BIC/TNBILL_NM" AS BILL_DOC
 ,t68_1.BILL_ITEM AS BILL_ITEM
 ,t68_1.SOURSYSTEM AS SOURSYSTEM
-,NULL AS BW_DELTA_PROCESS
+,'' AS BW_DELTA_PROCESS
 ,NULL AS PROMO_OPTIMIZATIN
 ,NULL AS CUST_PROJECT_NAME
 ,NULL AS CUST_REBATE_FLAG
@@ -1690,3 +1690,4 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   on to_char(inv.date_flag) = dt."/BIC/TUCTCDAYS"
   and dt."/BIC/TUCCOMPCE" = '0100'
   and dt."FISCVARNT" = 'Z1'
+*/
