@@ -331,6 +331,7 @@ join {{ source('us_cdp_bw_46','TUCMATSAS') }} as t3
   and t1.SOURSYSTEM = t3.SOURSYSTEM  
   and  t3."/BIC/TUCDISTRN" = '00'  
   and t3."/BIC/TUCSALESG" <> ''
+  and t1.SOURSYSTEM  =  'A3' and t3.SOURSYSTEM =  'A3'
 
 left join t6
   on t1."/BIC/TUCMATERL" = t6."/BIC/TUCMATERL"
@@ -342,7 +343,7 @@ left join {{ source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} t5
   -- part 2 6.8
 UNION ALL 
  
-select TOP 10
+select 
 md5(concat(t1.SOURSYSTEM,t1."/BIC/TNMATERIL", t4."/BIC/TNSALEORG" ,nvl(t4."/BIC/TNDISTNCH",''))) as material_master_key,
 t1.SOURSYSTEM as SOURSYSTEM,
 t1."/BIC/TNMATERIL" as MATERIAL_ID,
@@ -637,7 +638,7 @@ join  {{ source('us_cdp_bw_68','TNMATSLS') }} t4
   on t1."/BIC/TNMATERIL" = t4."/BIC/TNMATSLS"         
   and t1.soursystem = t4.soursystem 
   and t1.objvers = t4.objvers
-  and "/BIC/TNDISTNCH" = '01' 
+  and "/BIC/TNDISTNCH" = '01'   and t1.soursystem = 'A2'
 
 left join {{source('us_cdp','TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW')}} mfg_map
 --left join US_DATAPRACTICE.CDP.TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW mfg_map
@@ -645,13 +646,12 @@ left join {{source('us_cdp','TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW')}} mfg_map
 left join {{source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} cis_map
 --left join US_DATAPRACTICE.CDP.GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW cis_map
   on mfg_map.glbl_mfr = cis_map.glbl_mfr  
-  
-where t1.soursystem = 'A2'
+  --where t1.soursystem = 'A2'
 
 --part 3 cis
 UNION ALL 
 
-select TOP 10
+select 
 md5(concat('CIS_US', sku_no)) as pkey_material
 , 'CIS_US' as SOURSYSTEM
 , to_char(SKU_NO) as MATERIAL_ID
