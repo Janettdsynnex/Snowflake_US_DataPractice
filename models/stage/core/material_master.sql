@@ -638,7 +638,7 @@ join  {{ source('us_cdp_bw_68','TNMATSLS') }} t4
   on t1."/BIC/TNMATERIL" = t4."/BIC/TNMATSLS"         
   and t1.soursystem = t4.soursystem 
   and t1.objvers = t4.objvers
-  and "/BIC/TNDISTNCH" = '01'  
+  and "/BIC/TNDISTNCH" = '01'   and t1.soursystem = 'A2'
 
 left join {{source('us_cdp','TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW')}} mfg_map
 --left join US_DATAPRACTICE.CDP.TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW mfg_map
@@ -646,7 +646,7 @@ left join {{source('us_cdp','TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW')}} mfg_map
 left join {{source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} cis_map
 --left join US_DATAPRACTICE.CDP.GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW cis_map
   on mfg_map.glbl_mfr = cis_map.glbl_mfr  
-  where t1.soursystem = 'A2'
+  --where t1.soursystem = 'A2'
 
 --part 3 cis
 UNION ALL 
