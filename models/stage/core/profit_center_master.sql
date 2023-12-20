@@ -33,7 +33,7 @@ select
    ,NULL as TM1_HRCHY_L4
    ,NULL as TM1_HRCHY_L4_TEXT 
    ,SYSDATE() as UPDATE_DATE_UTC
-from  {{ ref('profit_ctr_hier') }} hier
+from  {{ source('us_cdp','PROFIT_CTR_HIER') }} hier
 
 union all
 
