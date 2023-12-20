@@ -1208,7 +1208,7 @@ left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
 union all 
  --part 3
 select 
-md5(concat('CIS_US', to_char(inv.ORDER_NO), to_char(inv.ORDER_LINE_NO), to_char(inv.ORDER_TYPE))) as billing_key
+ md5(concat('CIS_US', lpad(to_char(inv.ORDER_NO), 38, '0'), lpad(to_char(inv.ORDER_LINE_NO),38,'0'), to_char(inv.ORDER_TYPE))) as billing_key
 ,md5(concat('CIS US', to_char(matl.vpl_no))) as profit_center_master_key
 ,md5(concat('CIS_US', to_char(inv.cust_no))) as customer_key
 ,md5(concat('CIS_US', to_char(matl.sku_no))) as material_key
