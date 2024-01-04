@@ -995,7 +995,7 @@ md5(concat('CIS_US', 'US01','US01',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KE
 , NULL as LEGACY_SALES_ORG
 , SYSDATE() as UPDATE_DATE_UTC
 from {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} as cust
- --left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_ADDRESS_CONTACTS_INFO_US') }} as addr
+   -- left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_ADDRESS_CONTACTS_INFO_US') }} as addr
 --from ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US  cust
 --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_ADDRESS_CONTACTS_INFO_US  addr
 --on cust.mcust_no = addr.cust_no and addr.xref_seq = 1 and (addr.stop_email = 'N' OR addr.stop_email is null ) AND addr.BAD_EMAIL = 'Y' and cust.IS_DISCONTINUED is not null --  --  CHANGED 12/5 JR
