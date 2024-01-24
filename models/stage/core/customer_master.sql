@@ -690,7 +690,7 @@ T1.SOURSYSTEM = 'A3'
 union all
 
 select 
-md5(concat('CIS_US', 'US01','US01',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
+md5(concat('CIS_US',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , 'CIS_US' as SOURSYSTEM
 , 'US01' as SALES_ORG  
 , 'US01' as COMPANY_CODE  
