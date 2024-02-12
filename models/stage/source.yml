@@ -24,6 +24,7 @@ sources:
       - name: TUCPROFIR_HIER
       - name: TUCPROFIR_TXT
       - name: TUCTCDAYS
+      - name: TUCBSARK
 
 
   - name: us_cdp_bw_68
@@ -77,6 +78,7 @@ sources:
      - name: TNCBPCUST_VIEW
      - name: TUCCUSTOR_VIEW
      - name: TUCCUSTSS_VIEW
+     - name: MATERIAL_CIS_HRR_MAP 
      
 
      
