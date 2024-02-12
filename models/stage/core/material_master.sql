@@ -50,8 +50,8 @@ t1."/BIC/TUCDELFLG" as DELETION_FLAG,
 t1."/BIC/TUCDIVISN" as DIVISION,
 t1."/BIC/TUCEANUPC" as EUROPEAN_ARTICLE_NBR,
 t1."/BIC/TUCEKWSL"  as  PURCHASING_VALUE_KEY,
-t1."/BIC/TUCEXTMAP" as EXTERNAL_MATERIAL_GRP ,
-t1."/BIC/TUCFAMILY" as PROD_FAMILY,
+t1."/BIC/TUCEXTMAP" as EXTERNAL_MATERIAL_GRP,
+t7.cis_lvl_0 as PROD_FAMILY,    
 t1."/BIC/TUCGLGMNA" as GOALING_GLBL_MFR,
 t1."/BIC/TUCHAZFLG" as HAZARDOUS_MATERIAL,
 t1."/BIC/TUCHORS0"  as  HRZN_LOC_FIELD_S0,
@@ -95,13 +95,13 @@ t1."/BIC/TUCMMATN" as MFR_PART_NBR_CLEANED,
 t1."/BIC/TUCMSTAE" as CROSS_PLANT_MATERIAL,
 t1."/BIC/TUCMUPACK" as MULTI_PACK_NBR,
 t1."/BIC/TUCNSTRSO" as NEW_STRATEGIC_SOLUTION,
-t1."/BIC/TUCPROD" as PROD_CLASS,
+t7.cis_lvl_1 as PROD_CLASS,    
 t1."/BIC/TUCPRODHR" as PROD_HRCHY,
 t1."/BIC/TUCPRSTM1" as PROD_SERVICE,
 t1."/BIC/TUCSIZEDM" as SIZE_DIMENSION,
 t1."/BIC/TUCSLCTM1" as SOLUTION_CTGRY,
 t1."/BIC/TUCSLPTM1" as SOLUTION_PORTFOLIO,
-t1."/BIC/TUCSUB" as PROD_SUBCLASS,
+t7.cis_lvl_2 as PROD_SUBCLASS,
 t1."/BIC/TUCTSMAT" as TS_MATERIAL,
 t1."/BIC/TUCVEPAOE" as VENDOR_PART_NBR_EXTENSION,
 t1."/BIC/TUCVEPARO" as VENDOR_PART_NBR,
@@ -262,17 +262,13 @@ t3."/BIC/TUCVMSTA" as SALES_BLOCK_DISTR_CHAIN ,
 t3."/BIC/TUCWRRNT" as WARRANTY_CODE,
 t3."/BIC/TUCYVENPL" as VENDOR_PROD_LINE,
 t3."/BIC/TUCZZLMNR" as LOC_MFR ,
-
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t3."/BIC/TUDCHONN",'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as LAST_CHANGED_ON_SS,
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t3."/BIC/TUDCONVFF",'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as CONFORMITY_VALID_FROM,
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t3."/BIC/TUDCREATN",'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as CREATION_DATE_SS,
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t3."/BIC/TUDDNDEXP",'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as DND_EXPIRY_DATE,
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t3."/BIC/TUDLSODAT",'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as LAST_SO_DATE,
-
 NULL as  PL_ACTIVE_VALID_FROM_HRZN,
-
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t3."/BIC/TUDVMSTDD",'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as DISTR_CHAIN_VALIDITY_DATE,
-
 t3."/BIC/TUKAAGE" as AVERAGE_ARTICLE_AGE,
 t3."/BIC/TUKHORN1" as HRZN_LOC_FIELD_N1_SS,
 t3."/BIC/TUKHORN2" as HRZN_LOC_FIELD_N2_SS,
@@ -332,18 +328,19 @@ join {{ source('us_cdp_bw_46','TUCMATSAS') }} as t3
   and  t3."/BIC/TUCDISTRN" = '00'  
   and t3."/BIC/TUCSALESG" <> ''
   and t1.SOURSYSTEM  =  'A3' and t3.SOURSYSTEM =  'A3'
-
 left join t6
   on t1."/BIC/TUCMATERL" = t6."/BIC/TUCMATERL"
-
 left join {{ source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} t5
 --left join US_DATAPRACTICE.CDP.GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW t5
   on t1."/BIC/TUCZZGMNR" = t5.GLBL_MFR
-
+left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7 
+  on t1.soursystem = t7.soursystem 
+  and ltrim(t1."/BIC/TUCMATERL",'0') = t7.material_id
+  
   -- part 2 6.8
 UNION ALL 
  
-select 
+select
 md5(concat(t1.SOURSYSTEM,t1."/BIC/TNMATERIL", t4."/BIC/TNSALEORG" ,nvl(t4."/BIC/TNDISTNCH",''))) as material_master_key,
 t1.SOURSYSTEM as SOURSYSTEM,
 t1."/BIC/TNMATERIL" as MATERIAL_ID,
@@ -371,7 +368,7 @@ NULL as DIVISION ,
 NULL as EUROPEAN_ARTICLE_NBR,
 NULL as PURCHASING_VALUE_KEY,
 NULL as EXTERNAL_MATERIAL_GRP,
-NULL as PROD_FAMILY,
+t7.cis_lvl_0 as PROD_FAMILY,
 NULL as GOALING_GLBL_MFR,
 NULL as HAZARDOUS_MATERIAL,
 NULL as HRZN_LOC_FIELD_S0,
@@ -415,13 +412,13 @@ NULL as MFR_PART_NBR_CLEANED,
 NULL as CROSS_PLANT_MATERIAL,
 NULL as MULTI_PACK_NBR,
 NULL as NEW_STRATEGIC_SOLUTION,
-NULL as PROD_CLASS,
+t7.cis_lvl_1 as PROD_CLASS,
 NULL as PROD_HRCHY,
 t1."/BIC/TNPRDSVC" as PROD_SERVICE,
 NULL as SIZE_DIMENSION ,
 NULL as SOLUTION_CTGRY,
 NULL as SOLUTION_PORTFOLIO,
-NULL as PROD_SUBCLASS,
+t7.cis_lvl_2 as PROD_SUBCLASS,
 NULL as TS_MATERIAL,
 NULL as VENDOR_PART_NBR_EXTENSION,
 NULL as VENDOR_PART_NBR,
@@ -433,9 +430,7 @@ NULL as HP_PROD_HRCHY_LVL_3,
 NULL as HP_PROD_HRCHY_LVL_4, 
 nvl(cis_map.vendor_cis, mfg_map.glbl_mfr) as GLBL_MFR,
 NULL as  LAST_CHANGED_ON,
-
 TO_DATE(TO_CHAR(TO_DATE(NULLIF(t1.createdon,'00000000'),'YYYYMMDD'),'YYYY-MM-DD')) as CREATION_DATE,
-
 NULL as CROSS_PLANT_MAT_VALID,
 NULL as DATA_ANALYTICS_LH ,
 NULL as DATA_CENTER_LH,
@@ -618,7 +613,8 @@ NULL as GM_NBR_PRODS_IN_STOCK ,
 NULL as GM_STOCK_DELIVERY_DATE,
 NULL as GM_PROD_WEIGHT,
 NULL as GM_PICTURE_URL,
-NULL AS GM_F32,                                                                                                        
+NULL AS GM_F32,    
+
 case 
     when t1."/BIC/TNMATACFL" = 'X' then true 
     else false 
@@ -630,7 +626,6 @@ case
     end as MATERIAL_LVL_ACTIVITY
 
 ,SYSDATE() as UPDATE_DATE_UTC
-
 from  {{ source('us_cdp_bw_68','TNMATERIL') }}  as t1
 join  {{ source('us_cdp_bw_68','TNMATSLS') }} t4
 --from  ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL  as t1
@@ -639,14 +634,16 @@ join  {{ source('us_cdp_bw_68','TNMATSLS') }} t4
   and t1.soursystem = t4.soursystem 
   and t1.objvers = t4.objvers
   and "/BIC/TNDISTNCH" = '01'   and t1.soursystem = 'A2'
-
 left join {{source('us_cdp','TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW')}} mfg_map
 --left join US_DATAPRACTICE.CDP.TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW mfg_map
   on t1."/BIC/TNMANUFAC" = mfg_map."/BIC/TNMANUFAC"
 left join {{source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} cis_map
 --left join US_DATAPRACTICE.CDP.GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW cis_map
-  on mfg_map.glbl_mfr = cis_map.glbl_mfr  
-  --where t1.soursystem = 'A2'
+  on mfg_map.glbl_mfr = cis_map.glbl_mfr    
+left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7 
+  on t1.soursystem = t7.soursystem 
+  and ltrim(t1."/BIC/TNMATERIL",'0') = t7.material_id
+where prod_family is not null
 
 --part 3 cis
 UNION ALL 
@@ -679,7 +676,7 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 , NULL as EUROPEAN_ARTICLE_NBR
 , NULL as PURCHASING_VALUE_KEY
 , NULL as EXTERNAL_MATERIAL_GRP
-, NULL as PROD_FAMILY
+, coalesce(t7.cis_lvl_0, t8.cis_lvl_0) as PROD_FAMILY 
 , NULL as GOALING_GLBL_MFR
 , NULL as HAZARDOUS_MATERIAL
 , NULL as HRZN_LOC_FIELD_S0
@@ -723,13 +720,23 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 , NULL as CROSS_PLANT_MATERIAL
 , NULL as MULTI_PACK_NBR
 , NULL as NEW_STRATEGIC_SOLUTION
-, CATEGORY as PROD_CLASS
+
+, case  
+     when nvl(matl.family,'NULL') not in ('To Be Determined') then coalesce(t7.cis_lvl_1, t8.cis_lvl_1) 
+     else null 
+  end as PROD_CLASS
+  
 , NULL as PROD_HRCHY
 , PCODE as PROD_SERVICE
 , NULL as SIZE_DIMENSION
 , NULL as SOLUTION_CTGRY
 , NULL as SOLUTION_PORTFOLIO
-, VPL_CODE as PROD_SUBCLASS
+
+, case 
+     when nvl(matl.category,'NULL') not in ('No Category') then coalesce(matl.category, t7.cis_lvl_2)
+     else null 
+  end as PROD_SUBCLASS
+  
 , NULL as TS_MATERIAL
 , NULL as VENDOR_PART_NBR_EXTENSION
 , NULL as VENDOR_PART_NBR
@@ -739,7 +746,12 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 , NULL as HP_PROD_HRCHY_LVL_2
 , NULL as HP_PROD_HRCHY_LVL_3
 , NULL as HP_PROD_HRCHY_LVL_4
-, UNIVERSAL_VEND_NAME as GLBL_MFR
+
+, case
+    when UNIVERSAL_VEND_NAME = 'HPI' then 'HP INC.'
+    else UNIVERSAL_VEND_NAME
+  end as GLBL_MFR
+
 , NULL as LAST_CHANGED_ON
 , TO_DATE(matl.ENTRY_DATETIME) as CREATION_DATE
 , NULL as CROSS_PLANT_MAT_VALID
@@ -931,8 +943,13 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 
 from {{source('us_cdp_cis_us','DM_PUB_PART_INFO_VIEW_US') }} matl
 left join {{ source('us_cdp_cis_us', 'DM_PUB_VENDOR_INFO_VIEW_US')}} vend
-
---from ANALYTICS.EDW_CIS_US.DM_PUB_PART_INFO_VIEW_US matl
---left join ANALYTICS.EDW_CIS_US.DM_PUB_VENDOR_INFO_VIEW_US vend
   on matl.vend_no = vend.vend_no
+
+left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7   
+  on ltrim(to_char(matl.SKU_NO),'0') = t7.cis_material_id
+  and t7.soursystem = 'CIS_US'
+  
+left join (select distinct cis_lvl_1, cis_lvl_0 from us_datapractice.cdp.material_cis_hrr_map) as t8
+ on coalesce(matl.family, t7.cis_lvl_1) = t8.cis_lvl_1
+
 

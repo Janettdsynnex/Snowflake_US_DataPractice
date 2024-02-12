@@ -54,7 +54,7 @@ cis_cust_xref as (
         where rn = 1
                    )
 
-select 
+select
 md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYSTEM, t1.RECORDMODE)) as BILLING_KEY
 ,md5(t1."/BIC/TUCPROFIR") as PROFIT_CENTER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as CUSTOMER_MASTER_KEY
@@ -602,7 +602,7 @@ END AS CALENDAR_DAY
 ,t1.CALQUART1 as QUARTER
 ,t1.CALQUARTER as CALENDAR_YEAR_QUARTER
 ,t1.CALYEAR as CALENDAR_YEAR
-,NULL AS ELECT_COMMERCE_GRP
+,t8."/BIC/TUCECFLAG" AS ELECT_COMMERCE_GRP
 
 ,CASE
   WHEN t1."/BIC/TUDBILLDE" IS NULL OR t1."/BIC/TUDBILLDE" = '' OR t1."/BIC/TUDBILLDE" = '00000000'  THEN NULL
@@ -674,8 +674,11 @@ left join matl
   and t1."/BIC/TUCSALESG" = matl.sales_org  
   and matl.distr_channel = '00'   
 left join cis_cust_xref
-  ON ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
-  AND cis_cust_xref.xref_no = '1'
+  on ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
+  and cis_cust_xref.xref_no = '1'
+left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
+--left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
+  on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
   
 union all 
 -- part 2 SAP 6.8
@@ -1203,7 +1206,7 @@ left join {{ source('us_cdp_ecc_68','MAKT') }} makt
 left join cis_cust_xref
   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref
   and cis_cust_xref.xref_no = '68'
-left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
+left join {{ source('us_cdp_bw_68','TNMATERIL') }}  matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
   and matl1.soursystem = 'A2'
 
@@ -1710,5 +1713,4 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   on to_char(inv.date_flag) = dt."/BIC/TUCTCDAYS"
   and dt."/BIC/TUCCOMPCE" = '0100'
   and dt."FISCVARNT" = 'Z1'
-
 
