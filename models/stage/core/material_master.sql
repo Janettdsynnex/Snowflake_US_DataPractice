@@ -333,7 +333,8 @@ left join t6
 left join {{ source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} t5
 --left join US_DATAPRACTICE.CDP.GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW t5
   on t1."/BIC/TUCZZGMNR" = t5.GLBL_MFR
-left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7 
+  left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7 
+--left join us_datapractice.cdp.material_cis_hrr_map as t7 
   on t1.soursystem = t7.soursystem 
   and ltrim(t1."/BIC/TUCMATERL",'0') = t7.material_id
   
@@ -640,10 +641,10 @@ left join {{source('us_cdp','TNMANUFAC_TO_TUCZZGMNR_MAPPING_VIEW')}} mfg_map
 left join {{source('us_cdp','GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW')}} cis_map
 --left join US_DATAPRACTICE.CDP.GLBL_MFR_TO_VENDOR_CIS_MAPPING_VIEW cis_map
   on mfg_map.glbl_mfr = cis_map.glbl_mfr    
-left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7 
+left join us_datapractice.cdp.material_cis_hrr_map as t7 
   on t1.soursystem = t7.soursystem 
   and ltrim(t1."/BIC/TNMATERIL",'0') = t7.material_id
-where prod_family is not null
+
 
 --part 3 cis
 UNION ALL 
@@ -943,13 +944,16 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 
 from {{source('us_cdp_cis_us','DM_PUB_PART_INFO_VIEW_US') }} matl
 left join {{ source('us_cdp_cis_us', 'DM_PUB_VENDOR_INFO_VIEW_US')}} vend
+--from ANALYTICS.EDW_CIS_US.DM_PUB_PART_INFO_VIEW_US matl
+--left join ANALYTICS.EDW_CIS_US.DM_PUB_VENDOR_INFO_VIEW_US vend
   on matl.vend_no = vend.vend_no
 
 left join {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}  as t7   
+--left join us_datapractice.cdp.material_cis_hrr_map as t7   
   on ltrim(to_char(matl.SKU_NO),'0') = t7.cis_material_id
   and t7.soursystem = 'CIS_US'
   
-left join (select distinct cis_lvl_1, cis_lvl_0 from us_datapractice.cdp.material_cis_hrr_map) as t8
- on coalesce(matl.family, t7.cis_lvl_1) = t8.cis_lvl_1
-
+--left join (select distinct cis_lvl_1, cis_lvl_0 from us_datapractice.cdp.material_cis_hrr_map) as t8
+  left join (select distinct cis_lvl_1, cis_lvl_0 from {{source('us_cdp','MATERIAL_CIS_HRR_MAP') }}) as t8
+  on coalesce(matl.family, t7.cis_lvl_1) = t8.cis_lvl_1
 

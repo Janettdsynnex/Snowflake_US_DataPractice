@@ -654,8 +654,8 @@ left join {{ source('us_cdp_bw_46','TUCBILLTE') }}  as t5
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBILLTE  as t5 
    on t1."/BIC/TUCBILLTE" = t5."/BIC/TUCBILLTE"
   and t5."/BIC/TUCBILLT1" in ('','2','3','5')    
-left join {{ source('us_cdp_bw_46','TUCKTGRM') }}  as t6 
---left join ANALYTICS.EDW_SAP_BW_US_46.TUCKTGRM  as t6 
+--left join {{ source('us_cdp_bw_46','TUCKTGRM') }}  as t6 
+left join ANALYTICS.EDW_SAP_BW_US_46.TUCKTGRM  as t6 
    on t1."/BIC/TUCKTGRM" = t6."/BIC/TUCKTGRM"
    and t6."/BIC/TUCKTGGR" = 'NSB'   
 left join {{ source('us_cdp_bw_46','TUCCUSTOR') }}   as t7
@@ -1179,9 +1179,9 @@ END AS BILL_DOC_DATE
 ,NULL as TM1_HRCHY_L3
 ,NULL as TM1_HRCHY_L4
 ,matl.GLBL_MFR as GLBL_MFR
-,matl1."/BIC/TNPMMGDS1" as PROD_FAMILY
-,matl1."/BIC/TNPMMGDS2" as PROD_CLASS
-,matl1."/BIC/TNPMMGDS3" as PROD_SUBCLASS
+,matl.prod_family as  PROD_FAMILY
+,matl.prod_class as PROD_CLASS
+,matl.prod_subclass as  PROD_SUBCLASS
 ,t68_1."/BIC/TNSALEORG" AS LEGACY_SALES_ORG
 ,SYSDATE() as UPDATE_DATE_UTC 
 from {{ source('us_cdp_bw_68','TNBLIO02') }}  as t68_1
@@ -1206,7 +1206,8 @@ left join {{ source('us_cdp_ecc_68','MAKT') }} makt
 left join cis_cust_xref
   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref
   and cis_cust_xref.xref_no = '68'
-left join {{ source('us_cdp_bw_68','TNMATERIL') }}  matl1
+  left join {{ source('us_cdp_bw_68','TNMATERIL') }} matl1
+--left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
   and matl1.soursystem = 'A2'
 
@@ -1687,14 +1688,14 @@ select
 , to_char(pc.LEVEL_2_SEG_ID) as TM1_HRCHY_L3
 , to_char(pc.LEVEL_3_SEG_ID) as TM1_HRCHY_L4
 , to_char(inv.UNIVERSAL_VEND_NAME) as GLBL_MFR
-, to_char(inv.FAMILY) as PROD_FAMILY
-, to_char(inv.CATEGORY) as PROD_CLASS
-, to_char(matl.SUB_CATEGORY) as PROD_SUBCLASS
+, cte_matl.prod_family as  PROD_FAMILY
+, cte_matl.prod_class as PROD_CLASS
+, cte_matl.prod_subclass as  PROD_SUBCLASS
 ,'US01' AS LEGACY_SALES_ORG
 , SYSDATE() as UPDATE_DATE_UTC 
 from {{ source('us_cdp_cis_us','DWD_DISTY_COMMON_SALES_DETAIL_DI_US') }}   inv
 --from ANALYTICS.EDW_CIS_US.DWD_DISTY_COMMON_SALES_DETAIL_DI_US   inv
- left join {{source('us_cdp','CIS_US_ELECT_COMMERCE_GROUP_XREF') }}  el
+left join {{source('us_cdp','CIS_US_ELECT_COMMERCE_GROUP_XREF') }}  el
   on inv.FROM_REF_TYPE = el.FROM_REF_TYPE
 left join {{ source('us_cdp_cis_us','DM_PUB_PART_INFO_VIEW_US') }}   matl
 --left join ANALYTICS.EDW_CIS_US.DM_PUB_PART_INFO_VIEW_US   matl
@@ -1715,5 +1716,8 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   on to_char(inv.date_flag) = dt."/BIC/TUCTCDAYS"
   and dt."/BIC/TUCCOMPCE" = '0100'
   and dt."FISCVARNT" = 'Z1'
+  left join matl as cte_matl
+  on to_char(matl.sku_no) = cte_matl.material_id
+  and cte_matl.sales_org = 'CIS_US'
+  and cte_matl.soursystem = 'CIS_US'
  
-
