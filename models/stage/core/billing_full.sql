@@ -1667,7 +1667,7 @@ select
 , to_char(quarter(to_date(inv.date_flag))) as quarter
 , concat(year(to_date(inv.date_flag)),quarter(to_date(inv.date_flag))) as calendar_year_quarter
 , to_char(year(to_date(inv.date_flag))) as calendar_year
-, to_char(from_ref_type) as ELECT_COMMERCE_GRP
+, el.ELECT_COMMERCE_GRP
 , inv.date_flag as BILL_DOC_DATE
 , NULL as LOADING_DATE
 , to_char(inv.CUST_NAME) as CUST_NAME
@@ -1694,6 +1694,8 @@ select
 , SYSDATE() as UPDATE_DATE_UTC 
 from {{ source('us_cdp_cis_us','DWD_DISTY_COMMON_SALES_DETAIL_DI_US') }}   inv
 --from ANALYTICS.EDW_CIS_US.DWD_DISTY_COMMON_SALES_DETAIL_DI_US   inv
+ left join {{source('us_cdp','CIS_US_ELECT_COMMERCE_GROUP_XREF') }}  el
+  on inv.FROM_REF_TYPE = el.FROM_REF_TYPE
 left join {{ source('us_cdp_cis_us','DM_PUB_PART_INFO_VIEW_US') }}   matl
 --left join ANALYTICS.EDW_CIS_US.DM_PUB_PART_INFO_VIEW_US   matl
   on inv.sku_no = matl.sku_no 
@@ -1713,4 +1715,5 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   on to_char(inv.date_flag) = dt."/BIC/TUCTCDAYS"
   and dt."/BIC/TUCCOMPCE" = '0100'
   and dt."FISCVARNT" = 'Z1'
+ 
 
