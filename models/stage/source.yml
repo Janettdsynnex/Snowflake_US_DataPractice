@@ -37,6 +37,7 @@ sources:
       - name: TNMATSLS  
       - name: TNCBPCUST
       - name: TNCBPCUST_TXT
+      - name: VBKD
      
       
 
@@ -46,6 +47,7 @@ sources:
     schema: "EDW_SAP_ECC_US_68"
     tables:
       - name: MAKT
+      - name: VBKD
       
   - name: us_cdp_cis_us
     database: "ANALYTICS"
