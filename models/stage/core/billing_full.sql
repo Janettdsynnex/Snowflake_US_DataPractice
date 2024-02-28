@@ -1154,7 +1154,7 @@ END AS CALENDAR_DAY
 ,t68_1."/BIC/AACALQTR" AS QUARTER
 ,t68_1.CALQUARTER AS CALENDAR_YEAR_QUARTER
 ,t68_1.calyear AS CALENDAR_YEAR
-,NULL AS ELECT_COMMERCE_GRP
+,xref2.elect_commerce_grp AS ELECT_COMMERCE_GRP
 
 ,CASE
   WHEN t68_1.bill_date IS NULL OR t68_1.bill_date = '' OR t68_1.bill_date = '00000000' THEN NULL
@@ -1210,6 +1210,13 @@ left join cis_cust_xref
 --left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
   and matl1.soursystem = 'A2'
+  left join {{ source('us_cdp_ecc_68','VBKD') }} vbkd
+  --left join ANALYTICS.EDW_SAP_ECC_US_68.VBKD vbkd
+ on t68_1."/BIC/TND_NUMB" = vbkd.vbeln
+and t68_1.S_ORD_ITEM = vbkd.posnr
+left join US_DATAPRACTICE.CDP.SAP_68_ELECT_COMM_GRP_XREF xref2
+on vbkd.bsark = xref2.bsark
+
 
 union all 
  --part 3
