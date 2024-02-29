@@ -679,7 +679,7 @@ left join cis_cust_xref
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
-  
+where t1."/BIC/TUCSALESG" = '0100'
 union all 
 -- part 2 SAP 6.8
 
@@ -1216,7 +1216,7 @@ left join cis_cust_xref
 and t68_1.S_ORD_ITEM = vbkd.posnr
 left join US_DATAPRACTICE.CDP.SAP_68_ELECT_COMM_GRP_XREF xref2
 on vbkd.bsark = xref2.bsark
-
+WHERE t68_1."/BIC/TNSALEORG" = '1001'
 
 union all 
  --part 3
