@@ -675,7 +675,7 @@ left join matl
   and matl.distr_channel = '00'   
 left join cis_cust_xref
   on ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
-  and cis_cust_xref.xref_no = '1'
+  --and cis_cust_xref.xref_no = '1'
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
@@ -1205,7 +1205,7 @@ left join {{ source('us_cdp_ecc_68','MAKT') }} makt
   and makt.spras = 'E' 
 left join cis_cust_xref
   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref
-  and cis_cust_xref.xref_no = '68'
+  --and cis_cust_xref.xref_no = '68'
   left join {{ source('us_cdp_bw_68','TNMATERIL') }} matl1
 --left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
