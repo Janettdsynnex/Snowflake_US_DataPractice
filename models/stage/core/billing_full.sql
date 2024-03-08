@@ -20,6 +20,15 @@ from {{ ref('material_master') }}
 --from US_DATAPRACTICE.CORE.MATERIAL_MASTER
 ),
 
+custtbl as (
+select distinct
+    CUSTOMER_MASTER_KEY,
+    GROUPKEY, 
+    RESELLER_ID_COMBINED 
+from {{ ref('customer_master') }} 
+--from US_DATAPRACTICE.CORE.CUSTOMER_MASTER
+),
+
 cust as (
 select distinct     
     cust.tnecusnu as TUCCUSTSS, 
@@ -60,7 +69,8 @@ md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYST
 ,md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as CUSTOMER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM,t1."/BIC/TUCMATERL", t1."/BIC/TUCSALESG", t1."/BIC/TUCDISTRN")) as MATERIAL_MASTER_KEY
 ,t1."/BIC/TUCSOLDTO" as RESELLER_ID_46
-,NVL(cis_cust_xref.mcust_no, t1."/BIC/TUCSOLDTO") AS RESELLER_ID_COMBINED 
+--,NVL(cis_cust_xref.mcust_no, t1."/BIC/TUCSOLDTO") AS RESELLER_ID_COMBINED 
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED 
 ,cust.TNCBPCUST as RESELLER_ID_68
 ,NULL as IP_CHARGEBACK_DOC_ITEM
 ,NULL as IP_CHARGEBACK_DOC_NBR
@@ -612,7 +622,8 @@ END AS BILL_DOC_DATE
 ,NULL AS LOADING_DATE
 , t7."/BIC/TUCNAMEE" as CUST_NAME 
 , t7."/BIC/TUCACCNTP" as ACCNT_TYPE
-,nvl(cis_cust_xref.mcust_no, t3."/BIC/TUCHIEC03") as GROUPKEY
+--,nvl(cis_cust_xref.mcust_no, t3."/BIC/TUCHIEC03") as GROUPKEY
+,custtbl.GROUPKEY AS GROUPKEY
 ,NULL as SBU_HRCHY_L0
 ,pc.SBU_HRCHY_L1 as SBU_HRCHY_L1
 ,pc.SBU_HRCHY_L2 as SBU_HRCHY_L2
@@ -676,10 +687,14 @@ left join matl
 left join cis_cust_xref
   on ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
   --and cis_cust_xref.xref_no = '1'
+left join custtbl 
+on md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) = custtbl.CUSTOMER_MASTER_KEY
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
 where t1."/BIC/TUCSALESG" = '0100'
+
+
 union all 
 -- part 2 SAP 6.8
 
@@ -689,7 +704,8 @@ md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", 
 ,md5(concat(t68_1.SOURSYSTEM, t68_1."/BIC/TNSALEORG", '00', '01', "/BIC/TNSOLDTO")) as CUSTOMER_MASTER_KEY
 ,md5(concat(t68_1.SOURSYSTEM,t68_1."/BIC/TNMATERIL", t68_1."/BIC/TNSALEORG", '01')) as MATERIAL_MASTER_KEY
 ,t68_3.TUCCUSTOR_46 as RESELLER_ID_46
-,nvl(cis_cust_xref.mcust_no, t68_1."/BIC/TNSOLDTO") as RESELLER_ID_COMBINED
+--,nvl(cis_cust_xref.mcust_no, t68_1."/BIC/TNSOLDTO") as RESELLER_ID_COMBINED
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
 ,t68_1."/BIC/TNSOLDTO" AS RESELLER_ID_68
 ,t68_1."/BIC/TNCBITEM" AS IP_CHARGEBACK_DOC_ITEM
 ,t68_1."/BIC/TNCBNUM" AS IP_CHARGEBACK_DOC_NBR
@@ -1164,7 +1180,8 @@ END AS BILL_DOC_DATE
 ,NULL AS LOADING_DATE  
 ,t68_3.TNCBPCUST_TEXT as CUST_NAME
 ,NULL AS ACCNT_TYPE
-,nvl(cis_cust_xref.mcust_no, nvl(t68_3.TUCKONZS, t68_3.TNECUSNU)) as GROUPKEY
+--,nvl(cis_cust_xref.mcust_no, nvl(t68_3.TUCKONZS, t68_3.TNECUSNU)) as GROUPKEY
+,custtbl.GROUPKEY AS GROUPKEY
 ,NULL as SBU_HRCHY_L0
 ,NULL as SBU_HRCHY_L1
 ,NULL as SBU_HRCHY_L2
@@ -1206,6 +1223,8 @@ left join {{ source('us_cdp_ecc_68','MAKT') }} makt
 left join cis_cust_xref
   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref
   --and cis_cust_xref.xref_no = '68'
+left join custtbl 
+on md5(concat(t68_1.SOURSYSTEM, t68_1."/BIC/TNSALEORG", '00', '01', "/BIC/TNSOLDTO"))  = custtbl.CUSTOMER_MASTER_KEY
   left join {{ source('us_cdp_bw_68','TNMATERIL') }} matl1
 --left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
@@ -1218,6 +1237,7 @@ left join US_DATAPRACTICE.CDP.SAP_68_ELECT_COMM_GRP_XREF xref2
 on vbkd.bsark = xref2.bsark
 WHERE t68_1."/BIC/TNSALEORG" = '1001'
 
+
 union all 
  --part 3
 select 
@@ -1226,7 +1246,8 @@ select
 ,md5(concat('CIS_US', to_char(inv.cust_no))) as customer_key
 ,md5(concat('CIS_US', to_char(matl.sku_no))) as material_key
 , NULL as RESELLER_ID_46
-, to_char(inv.cust_no) as RESELLER_ID_COMBINED
+--, to_char(inv.cust_no) as RESELLER_ID_COMBINED
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
 , NULL as RESELLER_ID_68
 , NULL as IP_CHARGEBACK_DOC_ITEM
 , NULL as IP_CHARGEBACK_DOC_NBR
@@ -1680,7 +1701,8 @@ select
 , NULL as LOADING_DATE
 , to_char(inv.CUST_NAME) as CUST_NAME
 , NULL as ACCNT_TYPE
-, to_char(inv.MASTER_CUST_NO) as GROUPKEY
+--, to_char(inv.MASTER_CUST_NO) as GROUPKEY
+,custtbl.GROUPKEY AS GROUPKEY
 , NULL as SBU_HRCHY_L0
 , NULL as SBU_HRCHY_L1
 , NULL as SBU_HRCHY_L2
@@ -1694,7 +1716,8 @@ select
 , to_char(pc.LEVEL_1_SEG_ID) as TM1_HRCHY_L2
 , to_char(pc.LEVEL_2_SEG_ID) as TM1_HRCHY_L3
 , to_char(pc.LEVEL_3_SEG_ID) as TM1_HRCHY_L4
-, to_char(inv.UNIVERSAL_VEND_NAME) as GLBL_MFR
+--, to_char(inv.UNIVERSAL_VEND_NAME) as GLBL_MFR
+, cte_matl.GLBL_MFR as GLBL_MFR
 , cte_matl.prod_family as  PROD_FAMILY
 , cte_matl.prod_class as PROD_CLASS
 , cte_matl.prod_subclass as  PROD_SUBCLASS
@@ -1727,4 +1750,5 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   on to_char(matl.sku_no) = cte_matl.material_id
   and cte_matl.sales_org = 'CIS_US'
   and cte_matl.soursystem = 'CIS_US'
- 
+  left join custtbl 
+  on md5(concat('CIS_US', to_char(inv.cust_no)))  = custtbl.CUSTOMER_MASTER_KEY
