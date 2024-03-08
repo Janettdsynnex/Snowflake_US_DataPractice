@@ -21,13 +21,16 @@ from {{ ref('material_master') }}
 ),
 
 custtbl as (
-select distinct
-    CUSTOMER_MASTER_KEY,
-    GROUPKEY, 
-    RESELLER_ID_COMBINED 
-from {{ ref('customer_master') }} 
---from US_DATAPRACTICE.CORE.CUSTOMER_MASTER
-),
+    select
+        CUSTOMER_MASTER_KEY,
+        SOURSYSTEM,
+        SALES_ORG,
+        RESELLER_ID,
+        GROUPKEY,
+        RESELLER_ID_COMBINED
+    -- {{ ref('customer_master') }}
+    from US_DATAPRACTICE.CORE.CUSTOMER_MASTER
+  ),
 
 cust as (
 select distinct     
@@ -688,7 +691,9 @@ left join cis_cust_xref
   on ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
   --and cis_cust_xref.xref_no = '1'
 left join custtbl 
-on md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) = custtbl.CUSTOMER_MASTER_KEY
+  on t1.soursystem = custtbl.soursystem
+  and t1."/BIC/TUCSALESG" = custtbl.sales_org
+  and t1."/BIC/TUCSOLDTO" = custtbl.reseller_id
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
@@ -1224,7 +1229,10 @@ left join cis_cust_xref
   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref
   --and cis_cust_xref.xref_no = '68'
 left join custtbl 
-on md5(concat(t68_1.SOURSYSTEM, t68_1."/BIC/TNSALEORG", '00', '01', "/BIC/TNSOLDTO"))  = custtbl.CUSTOMER_MASTER_KEY
+  on t68_1.SOURSYSTEM = custtbl.soursystem
+  and t68_1."/BIC/TNSALEORG" = custtbl.sales_org
+  and t68_1."/BIC/TNSOLDTO" = custtbl.reseller_id
+
   left join {{ source('us_cdp_bw_68','TNMATERIL') }} matl1
 --left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
@@ -1233,7 +1241,7 @@ on md5(concat(t68_1.SOURSYSTEM, t68_1."/BIC/TNSALEORG", '00', '01', "/BIC/TNSOLD
   --left join ANALYTICS.EDW_SAP_ECC_US_68.VBKD vbkd
  on t68_1."/BIC/TND_NUMB" = vbkd.vbeln
 and t68_1.S_ORD_ITEM = vbkd.posnr
-left join US_DATAPRACTICE.CDP.SAP_68_ELECT_COMM_GRP_XREF xref2
+left join {{ source('us_cdp','SAP_68_ELECT_COMM_GRP_XREF') }}  xref2
 on vbkd.bsark = xref2.bsark
 WHERE t68_1."/BIC/TNSALEORG" = '1001'
 
@@ -1751,4 +1759,7 @@ left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
   and cte_matl.sales_org = 'CIS_US'
   and cte_matl.soursystem = 'CIS_US'
   left join custtbl 
-  on md5(concat('CIS_US', to_char(inv.cust_no)))  = custtbl.CUSTOMER_MASTER_KEY
+ on  to_char(inv.cust_no) =  custtbl.reseller_id
+ and custtbl.soursystem = 'CIS_US' 
+
+ 
