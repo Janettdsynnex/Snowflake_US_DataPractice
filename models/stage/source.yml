@@ -81,7 +81,8 @@ sources:
      - name: TUCCUSTOR_VIEW
      - name: TUCCUSTSS_VIEW
      - name: MATERIAL_CIS_HRR_MAP
-     - name: CIS_US_ELECT_COMMERCE_GROUP_XREF  
+     - name: CIS_US_ELECT_COMMERCE_GROUP_XREF 
+     - name: SAP_68_ELECT_COMM_GRP_XREF 
      
      
 
