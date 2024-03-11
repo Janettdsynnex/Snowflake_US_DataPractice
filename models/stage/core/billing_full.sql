@@ -694,6 +694,8 @@ left join custtbl
   on t1.soursystem = custtbl.soursystem
   and t1."/BIC/TUCSALESG" = custtbl.sales_org
   and t1."/BIC/TUCSOLDTO" = custtbl.reseller_id
+  and t1."/BIC/TUCDIVISN" = '00'
+  and t1."/BIC/TUCDISTRN" = '01'
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
@@ -1228,11 +1230,14 @@ left join {{ source('us_cdp_ecc_68','MAKT') }} makt
 left join cis_cust_xref
   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref
   --and cis_cust_xref.xref_no = '68'
+
 left join custtbl 
   on t68_1.SOURSYSTEM = custtbl.soursystem
   and t68_1."/BIC/TNSALEORG" = custtbl.sales_org
   and t68_1."/BIC/TNSOLDTO" = custtbl.reseller_id
-
+  and DIVISION = '00'
+  and DISTR_CHANNEL = '01'
+  
   left join {{ source('us_cdp_bw_68','TNMATERIL') }} matl1
 --left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
