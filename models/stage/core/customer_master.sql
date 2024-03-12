@@ -1,9 +1,9 @@
 {{
-     config(
-         alias = 'customer_master',
-         materialized = 'table'
-     )
- }}
+      config(
+          alias = 'customer_master',
+          materialized = 'table'
+      )
+  }}
 
 
 
@@ -22,8 +22,20 @@ with cust_xref as (
         left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} cust
         --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US cust
           on xref.cust_no = cust.cust_no
-        where rn = 1
-                   )
+        where rn = 1)        
+               
+
+     ,cust68 as (
+         select 
+            "/BIC/TNCBPCUST",
+            "/BIC/TNGLBCUST",
+            case when length("/BIC/TNECUSNU") = 0 then "/BIC/TNSERTRM1"
+              else "/BIC/TNECUSNU"
+            end as TNECUSNU
+         from {{ source('us_cdp_bw_68','TNCBPCUST') }} 
+         --from ANALYTICS.EDW_SAP_BW_US_68.TNCBPCUST
+         where SOURSYSTEM = 'A2'
+               )
 
 SELECT 
 MD5(CONCAT(T1.SOURSYSTEM,T1.TNSALEORG,'00','01',T1.TNCBPCUST)) AS CUSTOMER_MASTER_KEY,  
@@ -316,18 +328,17 @@ T1.TNSALEORG AS LEGACY_SALES_ORG,
 SYSDATE() as UPDATE_DATE_UTC
 FROM {{ source('us_cdp','CUSTOMERMASTER_BASE_68_MAPPED') }}  AS T1 
 --FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68_MAPPED   AS T1
-LEFT JOIN cust_xref
-  ON ltrim(T1.TNCBPCUST,0) = cust_xref.xref 
-LEFT JOIN {{ source('us_cdp_bw_68','TNCBPCUST') }} cust68
+
+--LEFT JOIN {{ source('us_cdp_bw_68','TNCBPCUST') }} cust68
 --LEFT JOIN ANALYTICS.EDW_SAP_BW_US_68.TNCBPCUST cust68
+LEFT JOIN cust68
   ON T1.TNCBPCUST = cust68."/BIC/TNCBPCUST"
-  AND cust68.SOURSYSTEM = 'A2'
 LEFT JOIN  {{ source('us_cdp_bw_46','TUCINDUSY_TXT') }} AS T6
 --LEFT JOIN ANALYTICS.EDW_SAP_BW_US_46.TUCINDUSY_TXT  AS T6
   ON T1.TUCINDUSY = T6."/BIC/TUCINDUSY"
 LEFT JOIN  {{ source('us_cdp_bw_46','TUCCUSTSS') }} cust46
 --LEFT JOIN ANALYTICS.EDW_SAP_BW_US_46.TUCCUSTSS cust46
-  ON cust68."/BIC/TNECUSNU" = cust46."/BIC/TUCCUSTSS" 
+  ON ltrim(cust68.TNECUSNU,'0') = ltrim(cust46."/BIC/TUCCUSTSS", '0')
   AND cust46.SOURSYSTEM = 'A3'
   AND cust46."/BIC/TUCDISTRN" = '00'
   AND cust46."/BIC/TUCDIVISN" = '10'
@@ -339,7 +350,10 @@ LEFT JOIN {{ source('us_cdp_bw_68','TNCUST_SL') }} T7
   AND T7.SOURSYSTEM = 'A2'
   AND T7.TNDISTNCH = '01'
   AND T7.TNDIV_SLS = '00'
+LEFT JOIN cust_xref
+  ON ltrim(T1.TNCBPCUST,0) = cust_xref.xref   
 WHERE T1.TNSALEORG in('1001')
+
 --PART 2
 UNION ALL
 
