@@ -1458,8 +1458,8 @@ select
 , NULL as SYS_NSP_DOC_PRICE
 , NULL as SYS_NSP_CUST_PRICE_LC
 , NULL as NSP_DOC_PRICE
-, to_char(inv.net_u_price) as NSP_LC
-, to_char(inv.net_u_price) as NSP_EUR
+, to_char(inv.net_u_price*inv.ship_qty) as NSP_LC
+, to_char(inv.net_u_price*inv.ship_qty) as NSP_EUR
 , NULL as SND_VENDOR_ALLOW_DC
 , NULL as SND_VENDOR_ALLOW_LC
 , NULL as PC_PRICE
