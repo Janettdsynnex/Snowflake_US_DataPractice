@@ -660,18 +660,18 @@ left join {{ source('us_cdp_bw_46','TUCCUSTSS') }} as t3
    and t3.SOURSYSTEM = 'A3'
    and t3."/BIC/TUCDISTRN" = '00'
    and t3."/BIC/TUCACCNTN" in ('','01')   
-left join {{ source('us_cdp_bw_46','TUCITEMCG') }}  as t4 
+left join {{ source('us_cdp_bw_46','TUCITEMCG') }}  as t4
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCITEMCG  as t4 
-   on t1."/BIC/TUCITEMCG" = t4."/BIC/TUCITEMCG"
-  and t4."/BIC/TUCITEMCA" in ('','1','3')   
+  on t1."/BIC/TUCITEMCG" = t4."/BIC/TUCITEMCG"
+  and t4."/BIC/TUCITEMCA" in('1', '3', '', NULL)
 left join {{ source('us_cdp_bw_46','TUCBILLTE') }}  as t5 
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBILLTE  as t5 
-   on t1."/BIC/TUCBILLTE" = t5."/BIC/TUCBILLTE"
-  and t5."/BIC/TUCBILLT1" in ('','2','3','5')    
-left join {{ source('us_cdp_bw_46','TUCKTGRM') }}  as t6 
+   on t1."/BIC/TUCBILLTE" = t5."/BIC/TUCBILLTE" 
+   and t5."/BIC/TUCBILLT1" in('2', '3', '5', '', NULL)   
+left join {{ source('us_cdp_bw_46','TUCKTGRM') }}  as t6
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCKTGRM  as t6 
-   on t1."/BIC/TUCKTGRM" = t6."/BIC/TUCKTGRM"
-   and t6."/BIC/TUCKTGGR" = 'NSB'   
+   on t1."/BIC/TUCKTGRM"  = t6."/BIC/TUCKTGRM" 
+  and t6."/BIC/TUCKTGGR" = 'NSB' 
 left join {{ source('us_cdp_bw_46','TUCCUSTOR') }}   as t7
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCCUSTOR as t7
    on t1."/BIC/TUCSOLDTO" = t7."/BIC/TUCCUSTOR" 
@@ -696,7 +696,9 @@ left join custtbl
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
-where t1."/BIC/TUCSALESG" = '0100'
+where t1.soursystem = 'A3'      
+      and t1."/BIC/TUCACCNTN"  in('01', '', NULL)
+      and  t1."/BIC/TUCSALESG" = '0100'
 
 union all 
 -- part 2 SAP 6.8
