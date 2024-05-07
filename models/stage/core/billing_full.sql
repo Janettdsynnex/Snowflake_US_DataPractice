@@ -696,7 +696,8 @@ left join custtbl
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
-where calendar_date between '2022-12-01' and '2023-11-30' and t1.soursystem = 'A3'      
+where --calendar_date between '2022-12-01' and '2023-11-30' and 
+      t1.soursystem = 'A3'      
       and t1."/BIC/TUCACCNTN"  in('01', '', NULL)
       and  t1."/BIC/TUCSALESG" = '0100'
 
@@ -912,8 +913,8 @@ md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", 
 ,NULL AS SYS_NSP_DOC_PRICE
 ,NULL AS SYS_NSP_CUST_PRICE_LC
 ,NULL AS NSP_DOC_PRICE
-,T68_1."/BIC/TNZZA17" AS NSP_LC
-,t68_1."/BIC/TNZZA17" AS NSP_EUR
+,T68_1."/BIC/TNXRSLLC" AS NSP_LC
+,t68_1."/BIC/TNXRSLUSD" AS NSP_EUR
 ,NULL AS SND_VENDOR_ALLOW_DC
 ,NULL AS SND_VENDOR_ALLOW_LC
 ,NULL AS PC_PRICE
