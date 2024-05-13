@@ -25,6 +25,9 @@ sources:
       - name: TUCPROFIR_TXT
       - name: TUCTCDAYS
       - name: TUCBSARK
+      - name: TUBKIO002
+      - name: TUSOIO002
+      
 
 
   - name: us_cdp_bw_68
@@ -38,6 +41,8 @@ sources:
       - name: TNCBPCUST
       - name: TNCBPCUST_TXT
       - name: VBKD
+      - name: TNSOIO02
+      - name: TNBCIO01
      
       
 
