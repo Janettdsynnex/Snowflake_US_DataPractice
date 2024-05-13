@@ -749,8 +749,8 @@ md5(concat('CIS_US', sku_no)) as pkey_material
 , NULL as HP_PROD_HRCHY_LVL_4
 
 , case
-    when UNIVERSAL_VEND_NAME = 'HPI' then 'HP INC.'
-    else UNIVERSAL_VEND_NAME
+    when vend.UNIVERSAL_VEND_NAME = 'HPI' then 'HP INC.'
+    else vend.UNIVERSAL_VEND_NAME
   end as GLBL_MFR
 
 , NULL as LAST_CHANGED_ON
