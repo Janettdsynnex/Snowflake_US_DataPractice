@@ -1,3 +1,12 @@
+{{
+     config(
+         alias = 'sales_order_listing_full',
+         materialized = 'table'
+
+     )
+ }}
+
+
 
 
 with matl as (
