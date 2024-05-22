@@ -367,4 +367,107 @@ left join custtbl
   and custtbl.soursystem = 'CIS_US' 
 where inv.order_type in('1', '125')
 
+-- ca
+union all
 
+select 
+md5(concat('CIS_CA', lpad(to_char(inv.ORDER_NO), 38, '0'), lpad(to_char(inv.ORDER_LINE_NO),38,'0'), to_char(inv.ORDER_TYPE))) as PKEY_SALES_ORDER_LISTING,
+md5(concat('CIS CA', to_char(matl.vpl_no))) as FKEY_PROFIT_CENTER_MASTER,
+md5(concat('CIS_CA', to_char(inv.cust_no))) as FKEY_CUSTOMER_MASTER,
+md5(concat('CIS_CA', to_char(matl.sku_no))) as FKEY_MATERIAL_MASTER,
+'CIS_CA' as SOURSYSTEM,
+'CA01' as COMPANY_CODE,
+'CA01' as SALES_ORG,
+to_char(inv.order_no) as SALES_DOC,
+to_char(inv.order_line_no) as SALES_DOC_ITEM,
+NULL as DISTR_CHANNEL,
+NULL as DIVISION,
+to_char(inv.ORDER_TYPE) as SALES_DOC_TYPE,
+to_char(inv.from_ref_type) as METHOD_ORDER_TAKING,
+to_char(inv.CUST_NO) as RESELLER,
+NULL as RESELLER_ID_46,
+custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED,
+NULL as RESELLER_ID_68,
+custtbl.GROUPKEY as GROUPKEY,
+to_char(inv.CUST_NAME) as RESELLER_NAME,
+custtbl.customer_accnt_group as ACCNT_TYPE,
+NULL as CUST_GRP2,
+to_char(cust.division) as SUPER_SALES_AREA,
+to_char(cust.cust_type) as SALES_AREA,
+to_char(cust.sales_terr) as SALES_EXECUTIVE,
+NULL as INTOUCH_ID,
+to_char(inv.order_entry_datetime, 'YYYY-MM-DD') as SALES_ORDER_DATE,
+to_char(inv.date_flag,'YYYY-MM-DD') as BILL_DATE,
+to_char(matl.sku_no) as MATERIAL_ID,
+cte_matl.MFR_PART_NBR as MFR_PART_NBR,
+to_char(inv.from_loc_no) as PLANT,
+to_char(pc.LEVEL_4_NAME) as PROFIT_CENTER,
+cte_matl.GLBL_MFR as GLBL_MFR,
+cte_matl.prod_family as PROD_FAMILY,
+cte_matl.prod_class as PROD_CLASS,
+cte_matl.prod_subclass as PROD_SUBCLASS,
+NULL as SBU_HRCHY_L0,
+NULL as SBU_HRCHY_L1,
+NULL as SBU_HRCHY_L2,
+NULL as SBU_HRCHY_L3,
+NULL as SBU_HRCHY_L4,
+NULL as SBU_HRCHY_L1_TXT,
+NULL as SBU_HRCHY_L2_TXT,
+NULL as SBU_HRCHY_L3_TXT,
+NULL as SBU_HRCHY_L4_TXT,
+to_char(pc.SOLUTION_CODE) as TM1_HRCHY_L1,
+to_char(pc.LEVEL_1_SEG_ID) as TM1_HRCHY_L2,
+to_char(pc.LEVEL_2_SEG_ID) as TM1_HRCHY_L3,
+to_char(pc.LEVEL_3_SEG_ID) as TM1_HRCHY_L4,
+NULL as REF_DOC_NBR,
+NULL as REF_DOC_ITEM,
+NULL as CUST_PURCHASE_ORDER,
+NULL as REJECTION_STATUS,
+NULL as REJECTION_REASON,
+NULL as DELIVERY_BLOCK,
+NULL as ORDER_STATUS,
+NULL as OVERALL_STATUS,
+NULL as FREIGHT_COLUMN,
+to_char(inv.terms) as PAYMENT_TERMS,
+NULL as VOUCHER_VENDOR_ID,
+NULL as VOUCHER_NBR,
+NULL as VOUCHER_VALUE_DOC,
+NULL as CUST_REBATE_FLAG,
+to_char(inv.net_u_price*inv.ship_qty)  as NSP_LC,
+NULL as SALES_ADJ_PROFIT_LC,
+to_char(inv.net_u_price*inv.ship_qty) - to_char(inv.u_cost*inv.ship_qty) as FRONT_END_PROFIT_LC,
+to_char((inv.net_u_price*inv.ship_qty)/fx.rate) - to_char((inv.u_cost*inv.ship_qty)/fx.rate) as FRONT_END_PROFIT_EUR,
+to_char(inv.net_u_price*inv.ship_qty) - to_char(inv.u_cost*inv.ship_qty) as NET_SALES_PROFIT_LC,
+to_char((inv.net_u_price*inv.ship_qty)/fx.rate) - to_char((inv.u_cost*inv.ship_qty)/fx.rate) as NET_SALES_PROFIT_EUR,
+to_char(inv.order_entry_datetime, 'YYYY-MM-DD') as CREATION_DATE,
+NULL as CREATED_BY,
+NULL as HEADER_INCOMPL_STATUS,
+NULL as ITEM_INCOMPL_STATUS,
+NULL as ITEM_DELIVERY_STATUS,
+NULL as OPEN_SO_FLAG,
+0 as SO_OPEN_QTY,
+0 as SO_OPEN_NSP_EUR,
+0 as SO_OPEN_NSP_LC,
+SYSDATE() as UPDATE_DATE_UTC
+from {{ source('ca_cdp_cis_ca','DWD_DISTY_COMMON_SALES_DETAIL_DI_CA') }}   inv
+--from ANALYTICS.EDW_CIS_CA.DWD_DISTY_COMMON_SALES_DETAIL_DI_CA   inv
+left join {{ source('ca_cdp_cis_ca','DM_PUB_PART_INFO_VIEW_CA') }}   matl
+--left join ANALYTICS.EDW_CIS_CA.DM_PUB_PART_INFO_VIEW_CA   matl
+  on inv.sku_no = matl.sku_no 
+left join {{ source('ca_cdp_cis_ca','DIM_PUB_BIZ_SEGMENT_HIERARCHY_CA') }}  pc
+--left join ANALYTICS.EDW_CIS_CA.DIM_PUB_BIZ_SEGMENT_HIERARCHY_CA  pc
+  on matl.vpl_no = pc.vpl_no
+left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }}  cust
+--left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_INFO_VIEW_CA  cust
+ on inv.cust_no = cust.cust_no
+left join matl as cte_matl
+  on to_char(matl.sku_no) = cte_matl.material_id
+  and cte_matl.sales_org = 'CIS_CA'
+  and cte_matl.soursystem = 'CIS_CA'
+left join custtbl 
+  on to_char(inv.cust_no) =  custtbl.reseller_id
+  and custtbl.soursystem = 'CIS_CA' 
+left join ANALYTICS.EDW_CIS_CA.DM_PUB_EXCHANGE_RATE_VIEW_CA fx
+  on inv.date_flag = fx.date_flag
+  and fx.local_currency = 'CAD'
+where inv.order_type in('1', '125')
