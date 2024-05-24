@@ -16,7 +16,7 @@ select
     SOURSYSTEM, 
     SALES_ORG, 
     DISTR_CHANNEL
-from {{ ref('material_master') }} 
+    from {{ ref('material_master') }} 
 --from US_DATAPRACTICE.CORE.MATERIAL_MASTER
 ),
 
@@ -28,7 +28,7 @@ custtbl as (
         GROUPKEY,
         RESELLER_ID_COMBINED,
         LEGACY_SALES_ORG
-     from {{ ref('customer_master') }}
+    from {{ ref('customer_master') }}
     --from US_DATAPRACTICE.CORE.CUSTOMER_MASTER
   ),
 
@@ -41,7 +41,7 @@ from {{ source('us_cdp', 'CUSTOMERMASTER_BASE_68') }}  cust
 join (select tnsaleorg,tnecusnu, max(createdon) createdon
       --from US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68 
       from {{ source('us_cdp', 'CUSTOMERMASTER_BASE_68') }} 
-      where tnsaleorg = '1001'
+      where tnsaleorg in('1001', '1002')
       group by tnsaleorg,tnecusnu
       ) as max_cust
   on cust.tnecusnu = max_cust.tnecusnu
@@ -49,30 +49,12 @@ join (select tnsaleorg,tnecusnu, max(createdon) createdon
   and cust.createdon = max_cust.createdon
 )
 
--- cis_cust_xref as (       
---         select xref.*, to_char(cust.mcust_no) mcust_no
---         from (
---             select to_char(cust_no) cust_no, 
---                    xref,  
---                    xref_no,
---                    ROW_NUMBER() OVER (PARTITION BY xref ORDER BY entry_datetime desc) as rn
---                 --from {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_XREF_US') }} a
---                 from ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_XREF_US a
---                 where xref_type = 'LTD_CUST'                 
---                     ) xref
---         --left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} cust
---         left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US cust
---           on xref.cust_no = cust.cust_no
---         where rn = 1
---                    )
-
-select
+select 
 md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYSTEM, t1.RECORDMODE)) as BILLING_KEY
 ,md5(t1."/BIC/TUCPROFIR") as PROFIT_CENTER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as CUSTOMER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM,t1."/BIC/TUCMATERL", t1."/BIC/TUCSALESG", t1."/BIC/TUCDISTRN")) as MATERIAL_MASTER_KEY
 ,t1."/BIC/TUCSOLDTO" as RESELLER_ID_46
---,NVL(cis_cust_xref.mcust_no, t1."/BIC/TUCSOLDTO") AS RESELLER_ID_COMBINED 
 ,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED 
 ,cust.TNCBPCUST as RESELLER_ID_68
 ,NULL as IP_CHARGEBACK_DOC_ITEM
@@ -625,7 +607,6 @@ END AS BILL_DOC_DATE
 ,NULL AS LOADING_DATE
 , t7."/BIC/TUCNAMEE" as CUST_NAME 
 , t7."/BIC/TUCACCNTP" as ACCNT_TYPE
---,nvl(cis_cust_xref.mcust_no, t3."/BIC/TUCHIEC03") as GROUPKEY
 ,custtbl.GROUPKEY AS GROUPKEY
 ,NULL as SBU_HRCHY_L0
 ,pc.SBU_HRCHY_L1 as SBU_HRCHY_L1
@@ -661,15 +642,15 @@ left join {{ source('us_cdp_bw_46','TUCCUSTSS') }} as t3
    and t3."/BIC/TUCDISTRN" = '00'
    and t3."/BIC/TUCACCNTN" in ('','01')   
 join {{ source('us_cdp_bw_46','TUCITEMCG') }}  as t4
---left join ANALYTICS.EDW_SAP_BW_US_46.TUCITEMCG  as t4 
+--join ANALYTICS.EDW_SAP_BW_US_46.TUCITEMCG  as t4 
   on t1."/BIC/TUCITEMCG" = t4."/BIC/TUCITEMCG"
   and t4."/BIC/TUCITEMCA" in('1', '3', '', NULL)
 join {{ source('us_cdp_bw_46','TUCBILLTE') }}  as t5 
---left join ANALYTICS.EDW_SAP_BW_US_46.TUCBILLTE  as t5 
+--join ANALYTICS.EDW_SAP_BW_US_46.TUCBILLTE  as t5 
    on t1."/BIC/TUCBILLTE" = t5."/BIC/TUCBILLTE" 
    and t5."/BIC/TUCBILLT1" in('2', '3', '5', '', NULL)   
 join {{ source('us_cdp_bw_46','TUCKTGRM') }}  as t6
---left join ANALYTICS.EDW_SAP_BW_US_46.TUCKTGRM  as t6 
+--join ANALYTICS.EDW_SAP_BW_US_46.TUCKTGRM  as t6 
    on t1."/BIC/TUCKTGRM"  = t6."/BIC/TUCKTGRM" 
   and t6."/BIC/TUCKTGGR" = 'NSB' 
 left join {{ source('us_cdp_bw_46','TUCCUSTOR') }}   as t7
@@ -687,8 +668,6 @@ left join matl
   and t1.soursystem = matl.soursystem
   and t1."/BIC/TUCSALESG" = matl.sales_org  
   and matl.distr_channel = '00'   
--- left join cis_cust_xref
---   on ltrim(T1."/BIC/TUCSOLDTO",0) = cis_cust_xref.xref
 left join custtbl 
   on t1.soursystem = custtbl.soursystem
   and t1."/BIC/TUCSALESG" = custtbl.legacy_sales_org
@@ -696,10 +675,9 @@ left join custtbl
 left join {{ source('us_cdp_bw_46','TUCBSARK') }}   as t8
 --left join ANALYTICS.EDW_SAP_BW_US_46.TUCBSARK t8
   on t1."/BIC/TUCBSARK" = t8."/BIC/TUCBSARK"
-where --calendar_date between '2022-12-01' and '2023-11-30' and 
-      t1.soursystem = 'A3'      
-      and t1."/BIC/TUCACCNTN"  in('01', '', NULL)
-      and  t1."/BIC/TUCSALESG" = '0100'
+where t1.soursystem = 'A3'      
+  and t1."/BIC/TUCACCNTN"  in('01', '', NULL)
+  and  t1."/BIC/TUCSALESG" = '0100'
 
 union all 
 -- part 2 SAP 6.8
@@ -710,7 +688,6 @@ md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", 
 ,md5(concat(t68_1.SOURSYSTEM, t68_1."/BIC/TNSALEORG", '00', '01', "/BIC/TNSOLDTO")) as CUSTOMER_MASTER_KEY
 ,md5(concat(t68_1.SOURSYSTEM,t68_1."/BIC/TNMATERIL", t68_1."/BIC/TNSALEORG", '01')) as MATERIAL_MASTER_KEY
 ,t68_3.TUCCUSTOR_46 as RESELLER_ID_46
---,nvl(cis_cust_xref.mcust_no, t68_1."/BIC/TNSOLDTO") as RESELLER_ID_COMBINED
 ,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
 ,t68_1."/BIC/TNSOLDTO" AS RESELLER_ID_68
 ,t68_1."/BIC/TNCBITEM" AS IP_CHARGEBACK_DOC_ITEM
@@ -877,8 +854,8 @@ md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", 
 ,t68_1."/BIC/TNXCOSTUS" AS COST_EUR 
 ,NULL AS SHIPPING_TYPE
 ,NULL AS DIVISION
-,'US01' as COMPANY_CODE
-,'US01' as SALES_ORG
+,IFF(t68_1."/BIC/TNSALEORG" in('1002', 'A002'), 'CA01', 'US01') as SALES_ORG
+,IFF(t68_1."/BIC/TNSALEORG" in('1002', 'A002'), 'CA01', 'US01') as COMPANY_CODE
 ,'01' AS DISTR_CHANNEL
 ,NULL AS USAGE_IND_MATERIAL
 ,NULL AS CREDIT_CONTROL_AREA
@@ -1186,7 +1163,6 @@ END AS BILL_DOC_DATE
 ,NULL AS LOADING_DATE  
 ,t68_3.TNCBPCUST_TEXT as CUST_NAME
 ,NULL AS ACCNT_TYPE
---,nvl(cis_cust_xref.mcust_no, nvl(t68_3.TUCKONZS, t68_3.TNECUSNU)) as GROUPKEY
 ,custtbl.GROUPKEY AS GROUPKEY
 ,NULL as SBU_HRCHY_L0
 ,NULL as SBU_HRCHY_L1
@@ -1213,26 +1189,20 @@ left join {{ source('us_cdp','CUSTOMERMASTER_BASE_68_MAPPED') }}   as t68_3
 --left join US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68_MAPPED  as t68_3 
   on t68_1."/BIC/TNSOLDTO" = t68_3.TNCBPCUST
   and t68_1."/BIC/TNSALEORG" = t68_3.TNSALEORG  
-
 left join cust
   on t68_1."/BIC/TNSOLDTO" = cust.tncbpcust
-
 left join matl
   on t68_1."/BIC/TNMATERIL" = matl.material_id
   and t68_1.soursystem = matl.soursystem
-  and t68_1."/BIC/TNSALEORG" = matl.sales_org
-  
+  and t68_1."/BIC/TNSALEORG" = matl.sales_org  
 left join {{ source('us_cdp_ecc_68','MAKT') }} makt
 --left join ANALYTICS.EDW_SAP_ECC_US_68.MAKT  makt
   on t68_1."/BIC/TNMATERIL" = makt.matnr
   and makt.spras = 'E' 
--- left join cis_cust_xref
---   on ltrim(t68_1."/BIC/TNSOLDTO",0) = cis_cust_xref.xref  
 left join custtbl 
   on t68_1.SOURSYSTEM = custtbl.soursystem
   and t68_1."/BIC/TNSALEORG" = custtbl.legacy_sales_org
   and t68_1."/BIC/TNSOLDTO" = custtbl.reseller_id
-
 left join {{ source('us_cdp_bw_68','TNMATERIL') }} matl1
 --left join ANALYTICS.EDW_SAP_BW_US_68.TNMATERIL matl1
   on t68_1."/BIC/TNMATERIL" = matl1."/BIC/TNMATERIL"
@@ -1244,7 +1214,7 @@ left join {{ source('us_cdp_ecc_68','VBKD') }} vbkd
 left join {{ source('us_cdp','SAP_68_ELECT_COMM_GRP_XREF') }}  xref2
 --left join US_DATAPRACTICE.CDP.SAP_68_ELECT_COMM_GRP_XREF  xref2
 on vbkd.bsark = xref2.bsark
-where t68_1."/BIC/TNSALEORG" = '1001'
+where t68_1."/BIC/TNSALEORG" in('1001', '1002')
 
 union all 
 --  --part 3
@@ -1254,7 +1224,6 @@ select
 ,md5(concat('CIS_US', to_char(inv.cust_no))) as customer_key
 ,md5(concat('CIS_US', to_char(matl.sku_no))) as material_key
 , NULL as RESELLER_ID_46
---, to_char(inv.cust_no) as RESELLER_ID_COMBINED
 ,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
 , NULL as RESELLER_ID_68
 , NULL as IP_CHARGEBACK_DOC_ITEM
@@ -1762,3 +1731,519 @@ left join matl as cte_matl
 left join custtbl 
   on to_char(inv.cust_no) =  custtbl.reseller_id
   and custtbl.soursystem = 'CIS_US' 
+  
+union all
+
+select
+ md5(concat('CIS_CA', lpad(to_char(inv.ORDER_NO), 38, '0'), lpad(to_char(inv.ORDER_LINE_NO),38,'0'), to_char(inv.ORDER_TYPE))) as billing_key
+,md5(concat('CIS CA', to_char(matl.vpl_no))) as profit_center_master_key
+,md5(concat('CIS_CA', to_char(inv.cust_no))) as customer_key
+,md5(concat('CIS_CA', to_char(matl.sku_no))) as material_key
+, NULL as RESELLER_ID_46
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
+, NULL as RESELLER_ID_68
+, NULL as IP_CHARGEBACK_DOC_ITEM
+, NULL as IP_CHARGEBACK_DOC_NBR
+, NULL as IP_CHARGEBACK_LOG_DOC_NBR
+, NULL as IP_CHARGEBACK_LOG_TYPE
+, to_char(inv.order_no) as BILL_DOC
+, to_char(inv.order_line_no) as BILL_ITEM
+, 'CIS_CA' as SOURSYSTEM
+, NULL as BW_DELTA_PROCESS
+, NULL as PROMO_OPTIMIZATIN
+, NULL as CUST_PROJECT_NAME
+, NULL as CUST_REBATE_FLAG
+, NULL as SPECIAL_STOCK
+, NULL as TECH_DATA_AS_A_SERVICE
+, to_char(matl.sku_no) as MATERIAL_ID
+, NULL as REVERSAL_IND
+, NULL  as LAST_CHANGED_ON 
+, NULL as SALES_DISTRICT
+, to_char(inv.order_type) as BILL_TYPE
+, NULL as BILL_CTGRY
+, NULL as CUST_GRP
+, NULL as PAYER
+, NULL as PROMOTION
+, to_char(inv.order_no) as SALES_DOC
+, to_char(inv.order_line_no) as SALES_DOC_ITEM
+, NULL as VOLUME_REBATE_GRP
+, NULL as BATCH_NBR
+, NULL as EUROPEAN_ARTICLE_NBR
+, NULL  as SERVICES_RENDERED_DATE
+, NULL as SALES_DEAL
+, NULL  as CONVERSION_DATE
+, NULL as CUST_PRICING_COLUMN
+, NULL as PROFILE_COLUMN
+, NULL as CUST_GRP_2
+, NULL as FREIGHT_COLUMN
+, NULL as SPECIAL_HANDLING_MD
+, NULL as ORDER_FULFILLMENT
+, NULL as STORAGE_LOCATION
+, NULL as MATERIAL_ENTERED
+, NULL as BUSINESS_MANAGER
+, NULL as DIVISION_MANAGER
+, NULL as DIRECTOR
+, NULL as REPAIR_TIME_DAYS
+, NULL as INVESTIGATION_RESULT
+, NULL as BILL_TO_PARTY
+, NULL as SHIP_TO_PARTY
+, NULL as ITEM_TYPE
+, to_char(pc.LEVEL_4_NAME) as PROFIT_CENTER
+, NULL as PROD_HRCHY
+, NULL as COMMISSION_GRP
+, NULL  as PRICING_EXCHANGE_RATE_DATE
+, NULL as SALES_DOC_ITEM_CAT
+, NULL as SALES_EMPLOYEE
+, NULL  as STATS_DATE
+, NULL  as UPDATE_DATE_STATS
+, NULL as DOC_NBR_OF_REF_DOC
+, NULL as SAP_INTERNAL_DELIVERY_NBR
+, NULL as ITEM_NBR_OF_REF_ITEM
+, NULL as SALES_OFFICE
+, NULL as SHIPPING_POINT
+, to_char(inv.from_loc_no) as PLANT
+, NULL as EXCHANGE_RATE_TYPE
+, NULL as SALES_DOC_CAT
+, NULL as CONTROLLING_AREA
+, NULL as COST_CENTER
+, NULL as MATERIAL_GRP
+, NULL as DIVISION_ORDER_HEADER
+, NULL as SALES_GRP
+, NULL as APPLICATION_COMPONENT
+, NULL as BW_TRANSACTION_KEY
+, to_char(cust.division) as SUPER_SALES_AREA
+, to_char(cust.cust_type) as SALES_AREA
+, to_char(cust.sales_terr) as SALES_EXECUTIVE
+, NULL as CUST_HRCHY_LVL_4
+, NULL as CUST_HRCHY_LVL_5
+, NULL as ACCNT_ASSIGN_GRP_MATERIAL
+, NULL as DND_REASON
+, CASE 
+    WHEN cust.cust_acct_type IN(null, '') THEN 'UNKNOWN'
+    ELSE UPPER(cust.cust_acct_type)
+  END as CUST_ACCNT_ASGMT_GRP
+
+, NULL as SHIPPING_CONDS
+, NULL as REF_DOC_NBR
+, NULL as RULE_IN_BILL_PLAN
+, to_char(matl.short_desc) as SALES_ORDER_ITEM_SHORT
+, NULL as MANUAL_PRICE_CHANGE
+, NULL as PRECEDING_DOC_CAT
+, NULL as ERMA_NBR
+, NULL  as END_USER_DATE
+, NULL as END_USER_INVOICE_NBR
+, NULL as ACCESSORIES
+, NULL as WARRANTY_IND
+, NULL as NAME_OF_ORDERER
+, NULL as CUST_PART_NBR
+, NULL as END_CUST_NBR
+, NULL as FREE_PROJECT_NBR
+, NULL as DRM_AGREEMENT_NO_TEX
+, NULL as PA_SF_REASON_CODE
+, NULL as CUST_VENDOR_INTERNAL_REF
+, NULL as SHIP_TO_PARTY_ORDER_NBR
+, to_char(inv.terms) as PAYMENT_TERMS
+, NULL as NEGATIVE_FEM_FLAG
+, NULL as PP_CODE
+, NULL as SALES_PROJECT_OWNER
+, NULL as CREATED_BY
+, NULL as ARCHIVE_FLAG
+, NULL as EXCHANGE_RATE_FI_POSTINGS
+, NULL as REBATE_BASIS_1
+, NULL as GROSS_WEIGHT
+, to_char(inv.ship_qty) as BILLED_QTY_SALES_UNITS
+, NULL as BILL_QTY_BASE_UNITS
+, NULL as BILLED_QTY_ORIGINAL
+, NULL as EXCHANGE_RATE_PRICING_STATS
+, NULL as EXACT_EXCHANGE_RATE_FI_POSTING
+, NULL as REQUIRED_QTY_MAT_MNGMT
+, NULL as TAX_AMOUNT_DC
+, NULL as NET_WEIGHT
+, NULL as AMOUNT_CASH_DISCOUNT_DC
+, NULL as SCALE_QTY_BASE_UNIT
+, NULL as DIVISOR_SALES_QTY_TO_SKU
+, NULL as FACTOR_SALES_QTY_TO_SKU
+, NULL as VOLUME_DELIVERED
+, NULL as COST_DC
+, NULL as NBR_BILL_ITEMS
+, NULL as COND_SUBTOTAL_1
+, NULL as SYSTEM_SELL_PRICE_DC
+, NULL as PROPOSED_FREIGHT_DOC
+, NULL as COND_SUBTOTAL_4
+, NULL as FRONT_END_PROFIT_DOC
+, NULL as COND_SUBTOTAL_6
+, NULL as NET_VALUE_BILL_ITEM_
+, NULL as EXCHANGE_RATE_STATS
+, NULL as GROSS_WEIGHT_SD_DC
+, NULL as DOC_CURR
+, NULL as WEIGHT_UNIT
+, NULL as SALES_UNIT
+, NULL as BASE_UNIT
+, NULL as VOLUME_UNIT
+, NULL as STATS_CUR
+, 'CAD' as LOC_CUR
+, NULL  as REQ_DELIVERY_DATE
+, to_char(inv.order_type)  as SALES_DOC_TYPE
+, NULL as SO_ITEM_CREATED_BY
+, to_char(inv.from_ref_type) as METHOD_ORDER_TAKING
+, NULL as LP_LIST_PRICE
+, NULL as RATE_UNIT_CUR_OR_PERC
+, NULL as COND_RATE_PURCH_PRICE
+, NULL as CUR_KEY_PURCH_COST
+, NULL as COND_RATE_ADJ_COST
+, NULL as CUR_KEY_ADJ_COST
+, to_char(inv.net_u_price) as SELL_PRICE_LC
+, to_char(inv.net_u_price) as SYSTEM_SELL_PRICE_LC
+, NULL as PROPOSED_FREIGHT_LC
+, NULL as ACTUAL_FREIGHT_LC
+, to_char(inv.net_u_price-inv.u_cost) as FRONT_END_PROFIT_LC
+, NULL as NET_SALES_PROFIT_LC
+, NULL as NET_VALUE_LC
+, to_char(inv.u_cost) as COST_LC
+, round(to_char(inv.net_u_price/fx.rate),2) as SELL_PRICE_EUR
+, round(to_char(inv.net_u_price/fx.rate),2) as SYSTEM_SELL_PRICE_EUR
+, NULL as PROPOSED_FREIGHT_EUR
+, NULL as ACTUAL_FREIGHT_EUR
+, round(to_char(inv.net_u_price*fx.rate),2) - round(to_char(inv.u_cost/fx.rate),2) as FRONT_END_PROFIT_EUR
+, NULL as NET_SALES_PROFIT_EUR
+, NULL as NET_VALUE_EUR
+, round(to_char(inv.u_cost/fx.rate),2) as COST_EUR
+, NULL as SHIPPING_TYPE
+, NULL as DIVISION
+, 'CA01' as COMPANY_CODE
+, 'CA01' as SALES_ORG
+, NULL as DISTR_CHANNEL
+, NULL as USAGE_IND_MATERIAL
+, NULL as CREDIT_CONTROL_AREA
+, NULL as CREDIT_MGMT_REPS_GRP
+, NULL as PRICING_COND
+, NULL as MATERIAL_PRICING_GRP
+, NULL as BILL_DOC_IS_CANCELLED
+, NULL as CANCELLED_BILL_DOC_NBR
+, NULL as SND_FLAG
+, NULL as PRICING_COND_COUNTER
+, NULL as CUST_PO_NBR
+, to_char(inv.CUST_NO) as RESELLER_ID
+, NULL as MATERIAL_PLANT
+, NULL as MATERIAL_SALES
+, NULL as MATERIAL_STORAGE_LOC
+, NULL as RESELLER_ID_CC
+, NULL as RESELLER_ID_SS
+, to_char(eu.EU_LOC_ADDRESS1) as END_USER_DETAIL_INFO
+, to_char(inv.SHIP_TO_ADDR) as SHIP_TO_DETAIL_INFO
+, NULL as USAGE_IND_HEADER
+, NULL as POD_RELEVANT
+, NULL as REGIONAL_SALES_ITEM
+, NULL as SALES_ITEM_FLAG
+, inv.date_flag  as CREATION_DATE
+, NULL as LOADING_DATE_INTO_BW
+, NULL as BUMPED_PRICE_DOC
+, NULL as BUMPED_PRICE_LC
+, NULL as SND_CUST_ALLOW
+, NULL as SND_CUST_ALLOW_LC
+, NULL as KIT_SND_CUST_ALLOW
+, NULL as KIT_SND_CUST_ALLOW_LC
+, NULL as SYS_NSP_DOC_PRICE
+, NULL as SYS_NSP_CUST_PRICE_LC
+, NULL as NSP_DOC_PRICE
+, round(to_char(inv.net_u_price*inv.ship_qty),2) as NSP_LC
+, round(to_char((inv.net_u_price*inv.ship_qty)/fx.rate),2) as NSP_EUR
+, NULL as SND_VENDOR_ALLOW_DC
+, NULL as SND_VENDOR_ALLOW_LC
+, NULL as PC_PRICE
+, NULL as PC_PRICE_LC
+, NULL as MAN_PRICING_IND
+, NULL as BUMP_VALUE_DOC
+, NULL as BUMP_VALUE_LC
+, NULL as GOV_FEE_DOC
+, NULL as GOV_FEE_LC
+, NULL as VELOCITY_DOC
+, NULL as VELOCITY_LC
+, NULL as INTOUCH_DISCOUNT_DOC
+, NULL as INTOUCH_DISCOUNT_LC
+, NULL as PC_PRICE_VENDOR_CUR
+, NULL as VENDORS_CUR
+, NULL as END_CUST_PRICE_REF_LC
+, round(to_char(inv.u_cost/fx.rate),2) as AC_PRICE
+, to_char(inv.u_cost) as AC_PRICE_LC
+, NULL as TOTAL_CA_ON_AC_KIT_COMP
+, NULL as TOTAL_CA_ON_AC_KIT_COMP_LC
+, NULL as TOTAL_CA_ON_AC_KIT_HEADER
+, NULL as TOTAL_CA_ON_AC_KIT_HEADER_LC
+, NULL as SALES_ADJ_PROFIT
+, NULL as SALES_ADJ_PROFIT_LC
+, NULL as WEEE_GOV_FEE
+, NULL as WEEE_GOV_FEE_LC
+, NULL as FUNCTIONAL_DISCOUNT
+, NULL as FUNCTIONAL_DISCOUNT_LC
+, to_char(inv.order_entry_datetime, 'YYYY-MM-DD') as SALES_ORDER_DATE
+, NULL as WARRANTY
+, NULL as EDI_ENDCUST_INVOICE
+, NULL as UTC_TIME_STAMP
+, NULL as SOLD_TO_PARTY_DETAIL
+, NULL as MIN_ORDER_SURCHARGE_DC
+, NULL as MIN_ORDER_SURCHARGE_LC
+, NULL as ACTUAL_VEITY_LC
+, NULL as ADD_FREIGHT_TOLLS_DC
+, NULL as ADD_FREIGHT_TOLLS_LC
+, NULL  as ARCHIVING_DATE
+, NULL as PC_PRICE_VENDOR_CUR_SO
+, NULL  as PRICING_DATE_SO 
+, NULL as BEM_2_DOC
+, NULL as BEM_2_LC
+, NULL as FREIGHT_COSTS_LC
+, NULL as FREIGHT_COSTS_DOC
+, NULL as NET_FREIGHT_DOC
+, NULL as NET_FREIGHT_LC
+, NULL as LOGISTIC_COSTS_DOC
+, NULL as LOGISTIC_COSTS_LC
+, NULL as FINANCIAL_COSTS_DOC
+, NULL as FINANCIAL_COSTS_LC
+, NULL as MIN_POM_DOC
+, NULL as MIN_POM_LC
+, NULL as POCKET_MARGIN_DOC
+, NULL as POCKET_MARGIN_LC
+, NULL as DIESEL_SURCHARGE_DOC
+, NULL as DIESEL_SURCHARGE_LC
+, NULL as ADD_POM_FACTOR_DOC
+, NULL as ADD_POM_FACTOR_LC
+, NULL as COND_ZRET_ASM_BUMP_DOC
+, NULL as COND_ZRET_ASM_BUMP_LC
+, NULL as FREIGHT_BUMP_ZZ78_DOC
+, NULL as FREIGHT_BUMP_ZZ78_LC
+, NULL  as COND_DATE
+, NULL as COPY_RIGHT_TAX_ZZG9
+, NULL as COPY_RIGHT_TAX_ZZG9_LC
+, NULL as COND_DATE_SO
+, NULL as COND_ZZG6_GOV_FEE_DOC
+, NULL as COND_ZZG6_GOV_FEE_LC
+, NULL as COND_ZZ94_RETAIL_DISCOUNT_DOC
+, NULL as COND_ZZ94_RETAIL_DISCOUNT_LC
+, NULL as COND_ZEDI_EDI1_PRICE_DIFF
+, NULL as COND_ZEDI_EDI1_PRICE_DIFF_LC
+, NULL as COND_ZZ74_ENV_FEE_HEADER
+, NULL as COND_ZZ74_ENV_FEE_HEADER_LC
+, NULL as VAT_REGISTRATION_NBR
+, NULL as TD_VAT_REGISTRATION_NBR
+, NULL as ALT_TAX_CLASS
+, NULL as TAX_CLASS
+, NULL as PROPOSED_MIN_QTY_SURCHARGE
+, NULL as ACTUAL_MIN_QTY_SURCHARGE
+, NULL as PROPOSED_MIN_QTY_SURCHARGE_LC
+, NULL as ACTUAL_MIN_QTY_SURCHARGE_LC
+, NULL as SPEC_STOCKPARTN
+, NULL as SPEC_STOCKPART_ID
+, NULL as DELIVERY_PRIO
+, NULL as MATERIAL_TIME_DEPEND
+, NULL as MATERIAL_PLANT_TIME_DEPEND
+, NULL AS MATERIAL_SALES_TIME_DEPENDL
+, NULL as CUST_SALES_TIME_DEPEND
+, NULL as INITIAL_PLANT
+, NULL as EXPORT_FLAG
+, NULL as ORDER_BUCKET_CODE
+, NULL as BUSINESS_ORDER_TYPE
+, NULL as BUSINESS_ORDER_LVL
+, NULL as BASIS_FREIGHT_LC
+, NULL as WASHINGTON_STATE_FEE_LC
+, NULL as FRONT_END_MARGIN_AC_LC  
+, NULL as NET_SALES_MARGIN_AC_LC
+, NULL as SALES_ADJ_MARGIN_AC_LC
+, NULL as POCKET_MARGIN_AC_LC
+, NULL as SELF_FOUNDED_PROMO_LC
+, NULL as BASIS_FREIGHT_DOC
+, NULL as WASHINGTON_STATE_FEE_DOC
+, NULL as FRONT_END_MARGIN_AC_DOC
+, NULL as NET_SALES_MARGIN_AC_DOC
+, NULL as SALES_ADJ_MARGIN_AC_DOC
+, NULL as POCKET_MARGIN_AC_DOC
+, NULL as SELF_FOUNDED_PROMO_DOC
+, NULL as NBR_PAYMENT_CARD_PLAN
+, NULL as OUT_ZONE_FLAG
+, NULL as GPMM_MANUAL_PRICE
+, NULL as EXTENDED_VENDOR_PURCH_COST_VC
+, NULL as EXTENDED_VENDOR_PURCH_COST_LC
+, NULL as PC_PRICE_LC_2
+, NULL as EXTENDED_VENDOR_PURCH_COST_DC
+, NULL as PC_PRICE_DC
+, NULL as VENDOR_REBATES_LC
+, NULL as VENDOR_REBATES
+, NULL as LINE_LVL_SHIP_COND
+, NULL as BILL_TO_DETAIL_INFO
+, NULL as CUST_DETAILS_INFO
+, NULL as NBR_DOC_COND
+, NULL as SND_RED_AC_DOC
+, NULL as SND_RED_AC_ZZKZWI4_LC
+, NULL as HRZN_FRA2_FLAG
+, NULL as FREIGHT_ADDER_VALUE_LC
+, NULL as IBU_FLAG
+, NULL as IBU_ADDER_VALUE_LC
+, NULL as ROYALTY_ADDER_FLAG
+, NULL as ROYALTY_ADDER_VALUE
+, NULL as CUSTOM_FLAG
+, NULL as CUSTOME_VALUE_LC
+, NULL as ROYALTY_CUR
+, NULL as ORIGINAL_BILL_DATE
+, NULL as FIXED_VENDOR_SOURCE_LIST
+, to_char(month(to_date(inv.date_flag))) as CALENDAR_MONTH
+, dt."/BIC/TUCCFQTR" as FISCAL_QUARTER
+, NULL as HIGH_LVL_ITEM_SO
+, to_char(quarter(to_date(inv.date_flag))) as CALENDAR_QUARTER
+, NULL as HIGHER_LVL_DOC_ITEM_NBR
+, NULL as BUMP_VOLUME_REB_VAL
+, NULL as BUMP_EXCL_VOL_REB
+, NULL as CUST_REBATE_VALUE
+, NULL as CUST_REBATE_EXCL
+, NULL as CUST_REBATE_MDF
+, NULL as CUST_REBATE_EXCL_MDF
+, NULL as TIME_CREATED
+, NULL as BUMP_VOLUME_REB_PERC
+, NULL as BUMP_EXCL_VOL_REB_PERC
+, NULL as TOTAL_REBATE_BUMP
+, NULL as TOTAL_CUST_REBATE
+, NULL as BUNDLE_ID
+, NULL as BUMPED_BEST_PRICE_DOC
+, NULL as BUMPED_BEST_PRICE_LC
+, NULL as VENDOR_PROGRAM
+, NULL as DAYS_TO_INVOICE
+, NULL as PRICING_EXCEPTION_FLAG
+, NULL  as POS_REPORTING_DATE
+, NULL as DAYS_TO_INVOICE_2
+, NULL as SERVICES_SOURCING
+, NULL as SERVICES_TECHNOLOGY
+, NULL as DND_REASON_NON_EMEA
+, NULL as FOREX_CORRECTED_FEM
+, NULL as FOREX_CORRECTED_FEP_LC
+, NULL as FOREX_CORRECTED_NSM
+, NULL as FOREX_CORRECTED_NSP_LC
+, NULL as FOREX_CORRECTED_SAM
+, NULL as FOREX_CORRECTED_SAP_LC
+, NULL as FOREX_CORRECTED_POM
+, NULL as FOREX_CORRECTED_POP_LC
+, NULL as CUSTS_ACCNT_NBR_CL_REF
+, NULL as UPDATE_FLAG
+, NULL as FLOORPLAN_SPONSORED_DOC
+, NULL as FLOORPLAN_SPONSORED_LC
+, NULL as MANUAL_GOV_FEE_DOC
+, NULL as MANUAL_GOV_FEE_LC
+, NULL as AC_PLUS_INS_TAX_VALUE
+, NULL as AC_PLUS_RESELLER_COMMISSION
+, NULL as AC_PLUS_VENDOR_COMMISSION
+, NULL as AC_PLUS_TD_VENDOR_REBATE
+, NULL as AC_PLUS_TD_RESELLER_REBATE
+, NULL as AC_PLUS_VENDOR_REBATE_REF
+, NULL as INS_SUPPLIER
+, NULL as AC_PLUS_INS_TAX_VALUE_LC
+, NULL as AC_PLUS_RESELLER_COMMISSION_LC
+, NULL as AC_PLUS_VENDOR_COMMISSION_LC
+, NULL as DELIVERY_GRP
+, NULL as AC_PLUS_INS_PREMIUM_TAX_PERC
+, NULL as END_USER_INFO
+, NULL as TDM_MDF_ON_INVOICE
+, NULL as TDM_MDF_ON_INVOICE_LC
+, NULL as TDM_HW_SUBSIDY
+, NULL as TDM_HW_SUBSIDY_LC
+, NULL as ORIGINAL_SELL_PRICE_
+, NULL as ORIGINAL_COST_SUBSCR_LC
+, NULL as SUBTOTAL_GOV_FEES
+, NULL as SUBTOTAL_GOV_FEES_LC
+, NULL as SND_BASE_DP_RATE
+, NULL as SND_BASE_DP_RATE_LC
+, NULL as RED_FEM_PERC_YAN0
+, NULL as RED_FEM_USD_YAN0
+, NULL as MINMARG_PERC_YAPB
+, NULL as MINMARG_USD_YAPB
+, NULL as RED_FEM_PERC_YAN0_LC
+, NULL as RED_FEM_USD_YAN0_LC
+, NULL as MINMARG_PERC_YAPB_LC
+, NULL as MINMARG_USD_YAPB_LC
+, NULL as WEB_DISCOUNT_VALUE_LC
+, NULL as WEB_DISCOUNT_VALUE
+, NULL as TAX_AMOUNT_LC
+, NULL as VOUCHER_NBR
+, NULL as VOUCHER_VENDOR_ID
+, NULL as VOUCHER_VALUE_LC
+, NULL as VOUCHER_VALUE_DOC
+, NULL as LINE_ORDER_TYPE
+, NULL as ORDER_CONSOLIDATION
+, NULL as CHEM_FEE_STOCK_HOLDER
+, NULL as SPECIAL_STOCK_IND
+, NULL as BTO_CUM_VALUE_DOC
+, NULL as BAD_BOX_ALLOW_DC
+, NULL as BTO_ID
+, NULL as INVENTORY_KEY_SALES
+, NULL as MATERIAL_TYPE
+, NULL as BAD_BOX_ALLOW_LC
+, NULL as BTO_CUM_VALUE_LC 
+, NULL as SBU_HRCHY_L1_OLD
+, inv.date_flag as inv_CALENDAR_DATE 
+, NULL as FISCAL_YEAR_VARIANT 
+, dt."/BIC/TUCFQYR" as fiscal_year_quarter
+, inv.date_flag as BILL_DATE
+, concat(year(to_date(inv.date_flag)),week(to_date(inv.date_flag))) as calendar_year_week 
+, inv.date_flag as CALENDAR_DAY
+, concat(dt.fiscyear, dt."/BIC/TUCCFMTH") as fiscal_year_period
+, concat(year(to_date(inv.date_flag)),month(to_date(inv.date_flag))) as calendar_year_month
+, to_char(month(to_date(inv.date_flag))) as calendar_month_2
+, dt."/BIC/TUCCFMTH" as posting_period
+, dt.FISCYEAR as fiscal_year
+, to_char(quarter(to_date(inv.date_flag))) as quarter
+, concat(year(to_date(inv.date_flag)),quarter(to_date(inv.date_flag))) as calendar_year_quarter
+, to_char(year(to_date(inv.date_flag))) as calendar_year
+, el.ELECT_COMMERCE_GRP
+, inv.date_flag as BILL_DOC_DATE
+, NULL as LOADING_DATE
+, to_char(inv.CUST_NAME) as CUST_NAME
+, NULL as ACCNT_TYPE
+, custtbl.GROUPKEY AS GROUPKEY
+, NULL as SBU_HRCHY_L0
+, NULL as SBU_HRCHY_L1
+, NULL as SBU_HRCHY_L2
+, NULL as SBU_HRCHY_L3
+, NULL as SBU_HRCHY_L4
+, NULL as SBU_HRCHY_L1_TXT
+, NULL as SBU_HRCHY_L2_TXT
+, NULL as SBU_HRCHY_L3_TXT
+, NULL as SBU_HRCHY_L4_TXT
+, to_char(pc.SOLUTION_CODE) as TM1_HRCHY_L1
+, to_char(pc.LEVEL_1_SEG_ID) as TM1_HRCHY_L2
+, to_char(pc.LEVEL_2_SEG_ID) as TM1_HRCHY_L3
+, to_char(pc.LEVEL_3_SEG_ID) as TM1_HRCHY_L4
+, cte_matl.GLBL_MFR as GLBL_MFR
+, cte_matl.prod_family as  PROD_FAMILY
+, cte_matl.prod_class as PROD_CLASS
+, cte_matl.prod_subclass as  PROD_SUBCLASS
+,'CA01' AS LEGACY_SALES_ORG
+, SYSDATE() as UPDATE_DATE_UTC 
+from {{ source('ca_cdp_cis_ca','DWD_DISTY_COMMON_SALES_DETAIL_DI_CA') }}   inv
+--from ANALYTICS.EDW_CIS_CA.DWD_DISTY_COMMON_SALES_DETAIL_DI_CA   inv
+left join {{source('us_cdp','CIS_US_ELECT_COMMERCE_GROUP_XREF') }}  el
+--left join US_DATAPRACTICE.CDP.CIS_US_ELECT_COMMERCE_GROUP_XREF  el
+  on inv.FROM_REF_TYPE = el.FROM_REF_TYPE
+left join {{ source('ca_cdp_cis_ca','DM_PUB_PART_INFO_VIEW_CA') }}   matl
+--left join ANALYTICS.EDW_CIS_CA.DM_PUB_PART_INFO_VIEW_CA   matl
+  on inv.sku_no = matl.sku_no 
+left join {{ source('ca_cdp_cis_ca','DIM_PUB_BIZ_SEGMENT_HIERARCHY_CA') }}  pc
+--left join ANALYTICS.EDW_CIS_CA.DIM_PUB_BIZ_SEGMENT_HIERARCHY_CA  pc
+  on matl.vpl_no = pc.vpl_no
+left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }}  cust
+--left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_INFO_VIEW_CA  cust
+  on inv.cust_no = cust.cust_no
+left join {{ source('ca_cdp_cis_ca','DWD_DISTY_COMMON_SALES_EU_DETAIL_DI_CA') }} eu
+--left join ANALYTICS.EDW_CIS_CA.DWD_DISTY_COMMON_SALES_EU_DETAIL_DI_CA eu
+  on inv.order_no = eu.order_no
+  and inv.order_line_no = eu.order_line_no
+  and inv.order_type = eu.order_type
+left join  {{ source('us_cdp_bw_46','TUCTCDAYS') }}  dt
+--left join  ANALYTICS.EDW_SAP_BW_US_46.TUCTCDAYS  dt
+  on to_char(inv.date_flag) = dt."/BIC/TUCTCDAYS"
+  and dt."/BIC/TUCCOMPCE" = '0100'
+  and dt."FISCVARNT" = 'Z1'
+left join matl as cte_matl
+  on to_char(matl.sku_no) = cte_matl.material_id 
+  and cte_matl.soursystem = 'CIS_CA'
+left join custtbl 
+  on to_char(inv.cust_no) =  custtbl.reseller_id
+  and custtbl.soursystem = 'CIS_CA' 
+left join ANALYTICS.EDW_CIS_CA.DM_PUB_EXCHANGE_RATE_VIEW_CA fx
+  on inv.date_flag = fx.date_flag
+  and fx.local_currency = 'CAD'
