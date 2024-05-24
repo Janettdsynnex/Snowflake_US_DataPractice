@@ -1,9 +1,9 @@
 {{
-      config(
-          alias = 'customer_master',
-          materialized = 'table'
-      )
-  }}
+       config(
+           alias = 'customer_master',
+           materialized = 'table'
+       )
+   }}
 
 
 
@@ -22,8 +22,26 @@ with cust_xref as (
         left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} cust
         --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US cust
           on xref.cust_no = cust.cust_no
-        where rn = 1)        
-               
+        where rn = 1       
+
+     union all
+     
+        select xref.*, to_char(cust.mcust_no) mcust_no
+        from (
+            select to_char(cust_no) cust_no, 
+                   xref,  
+                   xref_no,
+                   ROW_NUMBER() OVER (PARTITION BY xref ORDER BY entry_datetime desc) as rn
+                from {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_XREF_CA') }} a
+                --from ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_XREF_CA a
+                where xref_type = 'LTD_CUST'
+                  and xref_no in('1', '68')
+                      ) xref
+        left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }} cust
+        --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_INFO_VIEW_CA cust
+          on xref.cust_no = cust.cust_no
+        where rn = 1)
+        
 
      ,cust68 as (
          select 
@@ -40,8 +58,8 @@ with cust_xref as (
 SELECT 
 MD5(CONCAT(T1.SOURSYSTEM,T1.TNSALEORG,'00','01',T1.TNCBPCUST)) AS CUSTOMER_MASTER_KEY,  
 T1.SOURSYSTEM AS SOURSYSTEM,
-'US01' AS SALES_ORG,
-'US01' AS COMPANY_CODE,  
+IFF(t1.tnsaleorg in('1002', 'A002'), 'CA01', 'US01') as SALES_ORG,
+IFF(t1.tnsaleorg in('1002', 'A002'), 'CA01', 'US01') as COMPANY_CODE,
 '00' AS DIVISION,
 '01' AS DISTR_CHANNEL,
 T1.TNCBPCUST AS RESELLER_ID,
@@ -63,7 +81,13 @@ NULL AS LAST_LCS_STAGE_UPDATE,
 NULL AS LAST_LCS_STAGE_TEXT_CISCO,
 NULL AS LAST_LCS_STAGE_UPDATE_CISCO,
 NULL AS TS_CUST_ACCOUNT,
-nvl(cust_xref.mcust_no, nvl(cust46."/BIC/TUCHIEC03", cust68."/BIC/TNGLBCUST")) as GROUPKEY,
+
+case
+  when t1.tnsaleorg in('1001', 'A001', 'US33')
+    then nvl(cust_xref.mcust_no, nvl(cust46."/BIC/TUCHIEC03", cust68."/BIC/TNGLBCUST")) 
+  else   nvl(cust_xref.mcust_no, cust68."/BIC/TNGLBCUST")
+end as GROUPKEY,
+
 NULL AS DNB_DUNS_NBR,
 NULL AS DNB_CONFIDENCE_CODE,
 NULL AS DNB_NAME_SCORE,
@@ -328,9 +352,6 @@ T1.TNSALEORG AS LEGACY_SALES_ORG,
 SYSDATE() as UPDATE_DATE_UTC
 FROM {{ source('us_cdp','CUSTOMERMASTER_BASE_68_MAPPED') }}  AS T1 
 --FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68_MAPPED   AS T1
-
---LEFT JOIN {{ source('us_cdp_bw_68','TNCBPCUST') }} cust68
---LEFT JOIN ANALYTICS.EDW_SAP_BW_US_68.TNCBPCUST cust68
 LEFT JOIN cust68
   ON T1.TNCBPCUST = cust68."/BIC/TNCBPCUST"
 LEFT JOIN  {{ source('us_cdp_bw_46','TUCINDUSY_TXT') }} AS T6
@@ -352,7 +373,7 @@ LEFT JOIN {{ source('us_cdp_bw_68','TNCUST_SL') }} T7
   AND T7.TNDIV_SLS = '00'
 LEFT JOIN cust_xref
   ON ltrim(T1.TNCBPCUST,0) = cust_xref.xref   
-WHERE T1.TNSALEORG in('1001','1002')
+WHERE T1.TNSALEORG in('1001', '1002')
 
 --PART 2
 UNION ALL
@@ -754,7 +775,6 @@ md5(concat('CIS_US',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
     ELSE UPPER(cust.cust_acct_type)
   END as CUSTOMER_ACCNT_GROUP 
   
---, to_char(addr.ADDR_NO) as ADDRESS
 , NULL as ADDRESS
 , to_char(cust.BILL_TO_CUST_CITY) as CITY
 , to_char(cust.BILL_TO_CUST_COUNTRY) as COUNTRY_KEY
@@ -1006,14 +1026,10 @@ md5(concat('CIS_US',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , NULL as BUY_BACK_TRADE_IN
 , NULL as AFFORDABILITY_PORTAL
 , NULL as CUST_UNWILLING
-, NULL as LEGACY_SALES_ORG
+, 'US01' as LEGACY_SALES_ORG
 , SYSDATE() as UPDATE_DATE_UTC
-from {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} as cust
-   -- left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_ADDRESS_CONTACTS_INFO_US') }} as addr
+from {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} as cust   
 --from ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US  cust
---left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_ADDRESS_CONTACTS_INFO_US  addr
---on cust.mcust_no = addr.cust_no and addr.xref_seq = 1 and (addr.stop_email = 'N' OR addr.stop_email is null ) AND addr.BAD_EMAIL = 'Y' and cust.IS_DISCONTINUED is not null --  --  CHANGED 12/5 JR
-
 left join {{ source('us_cdp_cis_us','DIM_PUB_SALES_HIERARCHY_BY_TERR_USER_ROLE_VIEW_US') }} as terr
 --left join ANALYTICS.EDW_CIS_US.DIM_PUB_SALES_HIERARCHY_BY_TERR_USER_ROLE_VIEW_US  terr
   on cust.sales_terr = to_char(terr.sales_terr)
@@ -1031,12 +1047,6 @@ left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_CREDIT_INFO_US') }}  as cr
 --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_CREDIT_INFO_US  as creditinfo
   on cust.cust_no = creditinfo.cust_no
 
---left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_RESALES_NO_US') }} as  resales
---left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_RESALES_NO_US as  resales
---on  cust.cust_no = resales.cust_no
-
-
--- ca
 Union All
 
 select 
