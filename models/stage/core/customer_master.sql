@@ -352,7 +352,7 @@ LEFT JOIN {{ source('us_cdp_bw_68','TNCUST_SL') }} T7
   AND T7.TNDIV_SLS = '00'
 LEFT JOIN cust_xref
   ON ltrim(T1.TNCBPCUST,0) = cust_xref.xref   
-WHERE T1.TNSALEORG in('1001')
+WHERE T1.TNSALEORG in('1001','1002')
 
 --PART 2
 UNION ALL
