@@ -69,6 +69,8 @@ sources:
       - name: DWD_DISTY_COMMON_SALES_DETAIL_DI_US
       - name: DIM_PUB_CUSTOMER_CREDIT_INFO_US
       - name: DIM_PUB_CUSTOMER_RESALES_NO_US
+      - name: DWD_DISTY_SALES_OPEN_ORDER_DETAIL_US
+      
 
 
   -  name: ca_cdp_cis_ca
@@ -86,6 +88,8 @@ sources:
       - name: DWD_DISTY_COMMON_SALES_DETAIL_DI_CA
       - name: DIM_PUB_CUSTOMER_CREDIT_INFO_CA
       - name: DIM_PUB_CUSTOMER_RESALES_NO_CA
+      - name: DM_PUB_EXCHANGE_RATE_VIEW_CA
+      - name: DWD_DISTY_SALES_OPEN_ORDER_DETAIL_CA
 
      
       
