@@ -170,9 +170,9 @@ left join custtbl
   on t1.soursystem = custtbl.soursystem
   and t1."/BIC/TUCSALESG" = custtbl.legacy_sales_org
   and t1."/BIC/TUCSOLDTO" = custtbl.reseller_id
---join {{ source('us_cdp_bw_46','TUCITEMCG') }} itemcg
+join {{ source('us_cdp_bw_46','TUCITEMCG') }} itemcg
 --join ANALYTICS.EDW_SAP_BW_US_46.TUCITEMCG itemcg
-  and t1."/BIC/TUCITEMCG" = itemcg."/BIC/TUCITEMCG"
+  on t1."/BIC/TUCITEMCG" = itemcg."/BIC/TUCITEMCG"
   and itemcg."/BIC/TUCITEMCA" in('1', '3', '', NULL)
 join {{ source('us_cdp_bw_46','TUCKTGRM') }} ktgrm
 --join ANALYTICS.EDW_SAP_BW_US_46.TUCKTGRM ktgrm
