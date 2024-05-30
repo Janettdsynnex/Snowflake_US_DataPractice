@@ -69,6 +69,28 @@ sources:
       - name: DWD_DISTY_COMMON_SALES_DETAIL_DI_US
       - name: DIM_PUB_CUSTOMER_CREDIT_INFO_US
       - name: DIM_PUB_CUSTOMER_RESALES_NO_US
+      - name: DWD_DISTY_SALES_OPEN_ORDER_DETAIL_US
+      
+
+
+  -  name: ca_cdp_cis_ca
+     database: "ANALYTICS"
+     schema: "EDW_CIS_CA"
+     tables:
+      - name: DIM_PUB_CUSTOMER_INFO_VIEW_CA
+      - name: DIM_PUB_CUSTOMER_XREF_CA
+      - name: DM_PUB_PART_INFO_VIEW_CA
+      - name: DM_PUB_VENDOR_INFO_VIEW_CA
+      - name: DIM_PUB_BIZ_SEGMENT_HIERARCHY_CA
+      - name: DWD_DISTY_COMMON_SALES_EU_DETAIL_DI_CA
+      - name: DIM_PUB_CUSTOMER_ADDRESS_CONTACTS_INFO_CA
+      - name: DIM_PUB_SALES_HIERARCHY_BY_TERR_USER_ROLE_VIEW_CA
+      - name: DWD_DISTY_COMMON_SALES_DETAIL_DI_CA
+      - name: DIM_PUB_CUSTOMER_CREDIT_INFO_CA
+      - name: DIM_PUB_CUSTOMER_RESALES_NO_CA
+      - name: DM_PUB_EXCHANGE_RATE_VIEW_CA
+      - name: DWD_DISTY_SALES_OPEN_ORDER_DETAIL_CA
+
      
       
   - name: us_cdp
