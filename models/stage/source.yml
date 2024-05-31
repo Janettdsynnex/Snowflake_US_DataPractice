@@ -90,6 +90,7 @@ sources:
       - name: DIM_PUB_CUSTOMER_RESALES_NO_CA
       - name: DM_PUB_EXCHANGE_RATE_VIEW_CA
       - name: DWD_DISTY_SALES_OPEN_ORDER_DETAIL_CA
+     
 
      
       
