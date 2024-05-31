@@ -3,13 +3,13 @@
            alias = 'customer_master',
            materialized = 'table'
        )
-   }}
+ }}
 
 
 
 with cust_xref as (
        
-        select xref.*, to_char(cust.mcust_no) mcust_no
+        select xref.*, to_char(cust.mcust_no) mcust_no, 
         from (
             select to_char(cust_no) cust_no, 
                    xref,  
@@ -17,7 +17,7 @@ with cust_xref as (
                    ROW_NUMBER() OVER (PARTITION BY xref ORDER BY entry_datetime desc) as rn
                 from {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_XREF_US') }} a
                 --from ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_XREF_US a
-                where xref_type = 'LTD_CUST'                
+                where xref_type = 'LTD_CUST'              
                       ) xref
         left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} cust
         --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US cust
@@ -34,8 +34,7 @@ with cust_xref as (
                    ROW_NUMBER() OVER (PARTITION BY xref ORDER BY entry_datetime desc) as rn
                 from {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_XREF_CA') }} a
                 --from ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_XREF_CA a
-                where xref_type = 'LTD_CUST'
-                  and xref_no in('1', '68')
+                where xref_type = 'LTD_CUST'                  
                       ) xref
         left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }} cust
         --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_INFO_VIEW_CA cust
@@ -63,8 +62,8 @@ IFF(t1.tnsaleorg in('1002', 'A002'), 'CA01', 'US01') as COMPANY_CODE,
 '00' AS DIVISION,
 '01' AS DISTR_CHANNEL,
 T1.TNCBPCUST AS RESELLER_ID,
-T1.TUCCUSTOR_46 AS RESELLER_ID_46,
-nvl(cust_xref.mcust_no, T1.TNCBPCUST) as RESELLER_ID_COMBINED,
+nvl(T1.TUCCUSTOR_46, nvl(cust_xref.mcust_no,t1.tncbpcust)) AS RESELLER_ID_46,
+nvl(cust_xref.cust_no, T1.TNCBPCUST) as RESELLER_ID_COMBINED,
 T1.TNCBPCUST AS RESELLER_ID_68 ,
 NULL AS ACCOUNT_CLOSURE_FLAG,
 IFF(T1.TNCDELINDC = 'X' OR T7.DEL_INDIC = 'X' , TRUE, FALSE) AS DELETION_FLAG_MAIN, 
@@ -388,7 +387,7 @@ T2.TUCDISTRN AS DISTR_CHANNEL,
 T1.TUCCUSTOR AS RESELLER_ID,
 T1.TUCCUSTOR AS RESELLER_ID_46,
 NVL(cust_xref.mcust_no, T1.TUCCUSTOR) AS RESELLER_ID_COMBINED,  
-NULL AS RESELLER_ID_68, 
+NVL(T4.TNCBPCUST, T1.TUCCUSTOR) as RESELLER_ID_68,
 
 CASE 
     WHEN T2.TUCHIEA03 IN ('0030001061') THEN TRUE 
@@ -712,14 +711,15 @@ LEFT JOIN  {{source('us_cdp_bw_46','TUCINDUSY_TXT') }}  AS T9
 LEFT JOIN (SELECT DISTINCT TUCSALESG,TNCBPCUST,TNECUSNU 
            FROM  {{source('us_cdp','CUSTOMERMASTER_BASE_68') }} )  AS T4
            --FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68)  AS T4 
-  ON T1.TUCCUSTOR = T4.TNECUSNU 
-  AND T2.TUCCUSTSS = T4.TNCBPCUST 
+  ON T1.TUCCUSTOR = T4.TNECUSNU
   AND T2.TUCSALESG = T4.TUCSALESG
 LEFT JOIN cust_xref
   ON ltrim(T1.TUCCUSTOR,0) = cust_xref.xref
+-- left join US_DATAPRACTICE.PACE.CUSTOMER_LIFECYCLE CL  
+--   on t1.TUCHIEC03 = cl.groupkey
+--   on cl.company_code = 'US01'
   
-WHERE 
-T1.SOURSYSTEM = 'A3'
+WHERE T1.SOURSYSTEM = 'A3'
 
 -- PART 3
 union all
@@ -732,9 +732,17 @@ md5(concat('CIS_US',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , NULL as DIVISION
 , 0 as DISTR_CHANNEL
 , to_char(CUST.CUST_NO) as RESELLER_ID
-, to_char(CUST.CUST_NO) as RESELLER_ID_46
+, case when substr(cust_xref.xref,1,2) = '38'
+   and length(cust_xref.xref) = 8
+    then to_char(cust_xref.xref)
+    else to_char(CUST.CUST_NO)
+  end as RESELLER_ID_46
 , to_char(CUST.MCUST_NO) as RESELLER_ID_COMBINED
-, NULL as RESELLER_ID_68
+, case when substr(cust_xref.xref,1,1) = '9'
+   and length(cust_xref.xref) = 7
+    then to_char(cust_xref.xref)
+    else to_char(CUST.CUST_NO)
+  end as RESELLER_ID_68
 
 , CASE
     WHEN IS_DISCONTINUED = 'Y' THEN TRUE
@@ -834,7 +842,6 @@ md5(concat('CIS_US',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , NULL as DISTRICT
 , NULL as PO_BOX_CITY
 , NULL as VAT_REGISTRATION_NBR
---, to_char(resales.resales_no) as VAT_REGISTRATION_NBR
 , NULL as TELEBOX_NBR
 , NULL as FAX_NBR_2
 , NULL as CUST_COMM_TELETEX
@@ -1047,6 +1054,9 @@ left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_CREDIT_INFO_US') }}  as cr
 --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_CREDIT_INFO_US  as creditinfo
   on cust.cust_no = creditinfo.cust_no
 
+left join cust_xref 
+  on cust.cust_no = cust_xref.cust_no
+  
 Union All
 
 select 
@@ -1057,10 +1067,18 @@ md5(concat('CIS_CA',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , NULL as DIVISION
 , 0 as DISTR_CHANNEL
 , to_char(CUST.CUST_NO) as RESELLER_ID
-, to_char(CUST.CUST_NO) as RESELLER_ID_46
+, case when substr(cust_xref.xref,1,2) = '38'
+   and length(cust_xref.xref) = 8
+    then to_char(cust_xref.xref)
+    else to_char(CUST.CUST_NO)
+  end as RESELLER_ID_46
 , to_char(CUST.MCUST_NO) as RESELLER_ID_COMBINED
-, NULL as RESELLER_ID_68
-
+, case when substr(cust_xref.xref,1,1) = '9'
+   and length(cust_xref.xref) = 7
+    then to_char(cust_xref.xref)
+    else to_char(CUST.CUST_NO)
+  end as RESELLER_ID_68
+  
 , CASE
     WHEN IS_DISCONTINUED = 'Y' THEN TRUE
     ELSE FALSE
@@ -1368,3 +1386,5 @@ left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_XREF_CA') }} as xref
 left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_CREDIT_INFO_CA') }}  as creditinfo
 --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_CREDIT_INFO_CA  as creditinfo
   on cust.cust_no = creditinfo.cust_no
+left join cust_xref 
+  on cust.cust_no = cust_xref.cust_no

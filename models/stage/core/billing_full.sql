@@ -17,17 +17,11 @@ select
     SALES_ORG, 
     DISTR_CHANNEL
     from {{ ref('material_master') }} 
---from US_DATAPRACTICE.CORE.MATERIAL_MASTER
+    --from US_DATAPRACTICE.CORE.MATERIAL_MASTER
 ),
 
 custtbl as (
-    select
-        CUSTOMER_MASTER_KEY,
-        SOURSYSTEM,        
-        RESELLER_ID,
-        GROUPKEY,
-        RESELLER_ID_COMBINED,
-        LEGACY_SALES_ORG
+    select *
     from {{ ref('customer_master') }}
     --from US_DATAPRACTICE.CORE.CUSTOMER_MASTER
   ),
@@ -35,14 +29,15 @@ custtbl as (
 cust as (
 select distinct     
     cust.tnecusnu as TUCCUSTSS, 
-    cust.tncbpcust
+    cust.tncbpcust,
+    cust.tnsaleorg
 --from US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68  cust
 from {{ source('us_cdp', 'CUSTOMERMASTER_BASE_68') }}  cust
 join (select tnsaleorg,tnecusnu, max(createdon) createdon
       --from US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68 
       from {{ source('us_cdp', 'CUSTOMERMASTER_BASE_68') }} 
-      where tnsaleorg in('1001', '1002')
-      group by tnsaleorg,tnecusnu
+      where tnsaleorg in('1001', '1002')      
+      group by all
       ) as max_cust
   on cust.tnecusnu = max_cust.tnecusnu
   and cust.tnsaleorg = max_cust.tnsaleorg
@@ -54,9 +49,9 @@ md5(concat('', '', '', '', t1."/BIC/TUCBILLNM", t1."/BIC/TUCBILLIM", t1.SOURSYST
 ,md5(t1."/BIC/TUCPROFIR") as PROFIT_CENTER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as CUSTOMER_MASTER_KEY
 ,md5(concat(t1.SOURSYSTEM,t1."/BIC/TUCMATERL", t1."/BIC/TUCSALESG", t1."/BIC/TUCDISTRN")) as MATERIAL_MASTER_KEY
-,t1."/BIC/TUCSOLDTO" as RESELLER_ID_46
+,custtbl.RESELLER_ID_46 as RESELLER_ID_46
 ,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED 
-,cust.TNCBPCUST as RESELLER_ID_68
+,custtbl.RESELLER_ID_68 as RESELLER_ID_68
 ,NULL as IP_CHARGEBACK_DOC_ITEM
 ,NULL as IP_CHARGEBACK_DOC_NBR
 ,NULL as IP_CHARGEBACK_LOG_DOC_NBR
@@ -605,9 +600,9 @@ END AS CALENDAR_DAY
 END AS BILL_DOC_DATE
 
 ,NULL AS LOADING_DATE
-, t7."/BIC/TUCNAMEE" as CUST_NAME 
-, t7."/BIC/TUCACCNTP" as ACCNT_TYPE
-,custtbl.GROUPKEY AS GROUPKEY
+,custtbl.RESELLER_NAME as CUST_NAME
+,custtbl.CUSTOMER_ACCNT_GROUP as ACCNT_TYPE
+,custtbl.GROUPKEY as GROUPKEY
 ,NULL as SBU_HRCHY_L0
 ,pc.SBU_HRCHY_L1 as SBU_HRCHY_L1
 ,pc.SBU_HRCHY_L2 as SBU_HRCHY_L2
@@ -660,6 +655,7 @@ left join {{ source('us_cdp_bw_46','TUCCUSTOR') }}   as t7
   and t7."/BIC/TUCACCNTP" <> 'ZIC'
 left join cust
   on t1."/BIC/TUCSOLDTO" = cust.TUCCUSTSS  
+  and cust.tnsaleorg = '1001'
 left join {{ ref('profit_center_master') }}  pc
 --left join US_DATAPRACTICE.CORE.PROFIT_CENTER_MASTER  pc
   on t1."/BIC/TUCPROFIR" = pc.PROFIT_CENTER  
@@ -687,9 +683,9 @@ md5(concat("/BIC/TNCBITEM", "/BIC/TNCBNUM", "/BIC/TNCBLGNUM", "/BIC/TNCBLGTYP", 
 ,md5("/BIC/TNPROFITC") as PROFIT_CENTER_MASTER_KEY
 ,md5(concat(t68_1.SOURSYSTEM, t68_1."/BIC/TNSALEORG", '00', '01', "/BIC/TNSOLDTO")) as CUSTOMER_MASTER_KEY
 ,md5(concat(t68_1.SOURSYSTEM,t68_1."/BIC/TNMATERIL", t68_1."/BIC/TNSALEORG", '01')) as MATERIAL_MASTER_KEY
-,t68_3.TUCCUSTOR_46 as RESELLER_ID_46
-,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
-,t68_1."/BIC/TNSOLDTO" AS RESELLER_ID_68
+,custtbl.RESELLER_ID_46 as RESELLER_ID_46
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED 
+,custtbl.RESELLER_ID_68 as RESELLER_ID_68
 ,t68_1."/BIC/TNCBITEM" AS IP_CHARGEBACK_DOC_ITEM
 ,t68_1."/BIC/TNCBNUM" AS IP_CHARGEBACK_DOC_NBR
 ,t68_1."/BIC/TNCBLGNUM" AS IP_CHARGEBACK_LOG_DOC_NBR
@@ -1161,9 +1157,9 @@ END AS CALENDAR_DAY
 END AS BILL_DOC_DATE
 
 ,NULL AS LOADING_DATE  
-,t68_3.TNCBPCUST_TEXT as CUST_NAME
-,NULL AS ACCNT_TYPE
-,custtbl.GROUPKEY AS GROUPKEY
+,custtbl.RESELLER_NAME as CUST_NAME
+,custtbl.CUSTOMER_ACCNT_GROUP as ACCNT_TYPE
+,custtbl.GROUPKEY as GROUPKEY
 ,NULL as SBU_HRCHY_L0
 ,NULL as SBU_HRCHY_L1
 ,NULL as SBU_HRCHY_L2
@@ -1214,18 +1210,19 @@ left join {{ source('us_cdp_ecc_68','VBKD') }} vbkd
 left join {{ source('us_cdp','SAP_68_ELECT_COMM_GRP_XREF') }}  xref2
 --left join US_DATAPRACTICE.CDP.SAP_68_ELECT_COMM_GRP_XREF  xref2
 on vbkd.bsark = xref2.bsark
-where t68_1."/BIC/TNSALEORG" in('1001', '1002')
-
+where t68_1."/BIC/TNSALEORG" in( '1002', '1001')
+  
 union all 
---  --part 3
+
+--part 3
 select 
  md5(concat('CIS_US', lpad(to_char(inv.ORDER_NO), 38, '0'), lpad(to_char(inv.ORDER_LINE_NO),38,'0'), to_char(inv.ORDER_TYPE))) as billing_key
 ,md5(concat('CIS US', to_char(matl.vpl_no))) as profit_center_master_key
 ,md5(concat('CIS_US', to_char(inv.cust_no))) as customer_key
 ,md5(concat('CIS_US', to_char(matl.sku_no))) as material_key
-, NULL as RESELLER_ID_46
-,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
-, NULL as RESELLER_ID_68
+,custtbl.RESELLER_ID_46 as RESELLER_ID_46
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED 
+,custtbl.RESELLER_ID_68 as RESELLER_ID_68
 , NULL as IP_CHARGEBACK_DOC_ITEM
 , NULL as IP_CHARGEBACK_DOC_NBR
 , NULL as IP_CHARGEBACK_LOG_DOC_NBR
@@ -1676,10 +1673,9 @@ select
 , el.ELECT_COMMERCE_GRP
 , inv.date_flag as BILL_DOC_DATE
 , NULL as LOADING_DATE
-, to_char(inv.CUST_NAME) as CUST_NAME
-, NULL as ACCNT_TYPE
---, to_char(inv.MASTER_CUST_NO) as GROUPKEY
-,custtbl.GROUPKEY AS GROUPKEY
+,custtbl.RESELLER_NAME as CUST_NAME
+,custtbl.CUSTOMER_ACCNT_GROUP as ACCNT_TYPE
+,custtbl.GROUPKEY as GROUPKEY
 , NULL as SBU_HRCHY_L0
 , NULL as SBU_HRCHY_L1
 , NULL as SBU_HRCHY_L2
@@ -1734,14 +1730,14 @@ left join custtbl
   
 union all
 
-select
+select top 1000
  md5(concat('CIS_CA', lpad(to_char(inv.ORDER_NO), 38, '0'), lpad(to_char(inv.ORDER_LINE_NO),38,'0'), to_char(inv.ORDER_TYPE))) as billing_key
 ,md5(concat('CIS CA', to_char(matl.vpl_no))) as profit_center_master_key
 ,md5(concat('CIS_CA', to_char(inv.cust_no))) as customer_key
 ,md5(concat('CIS_CA', to_char(matl.sku_no))) as material_key
-, NULL as RESELLER_ID_46
-,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED
-, NULL as RESELLER_ID_68
+,custtbl.RESELLER_ID_46 as RESELLER_ID_46
+,custtbl.RESELLER_ID_COMBINED as RESELLER_ID_COMBINED 
+,custtbl.RESELLER_ID_68 as RESELLER_ID_68
 , NULL as IP_CHARGEBACK_DOC_ITEM
 , NULL as IP_CHARGEBACK_DOC_NBR
 , NULL as IP_CHARGEBACK_LOG_DOC_NBR
@@ -2192,9 +2188,9 @@ select
 , el.ELECT_COMMERCE_GRP
 , inv.date_flag as BILL_DOC_DATE
 , NULL as LOADING_DATE
-, to_char(inv.CUST_NAME) as CUST_NAME
-, NULL as ACCNT_TYPE
-, custtbl.GROUPKEY AS GROUPKEY
+,custtbl.RESELLER_NAME as CUST_NAME
+,custtbl.CUSTOMER_ACCNT_GROUP as ACCNT_TYPE
+,custtbl.GROUPKEY as GROUPKEY
 , NULL as SBU_HRCHY_L0
 , NULL as SBU_HRCHY_L1
 , NULL as SBU_HRCHY_L2
@@ -2244,6 +2240,8 @@ left join matl as cte_matl
 left join custtbl 
   on to_char(inv.cust_no) =  custtbl.reseller_id
   and custtbl.soursystem = 'CIS_CA' 
-left join ANALYTICS.EDW_CIS_CA.DM_PUB_EXCHANGE_RATE_VIEW_CA fx
+left join {{ source('ca_cdp_cis_ca','DM_PUB_EXCHANGE_RATE_VIEW_CA') }} fx
+--left join ANALYTICS.EDW_CIS_CA.DM_PUB_EXCHANGE_RATE_VIEW_CA fx
   on inv.date_flag = fx.date_flag
   and fx.local_currency = 'CAD'
+
