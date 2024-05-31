@@ -36,7 +36,7 @@ with cust_xref as (
                 --from ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_XREF_CA a
                 where xref_type = 'LTD_CUST'                  
                       ) xref
-        left join {{ source('us_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }} cust
+        left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }} cust
         --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_INFO_VIEW_CA cust
           on xref.cust_no = cust.cust_no
         where rn = 1)
