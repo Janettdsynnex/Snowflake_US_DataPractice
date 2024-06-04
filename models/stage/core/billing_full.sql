@@ -1730,7 +1730,7 @@ left join custtbl
   
 union all
 
-select top 1000
+select  
  md5(concat('CIS_CA', lpad(to_char(inv.ORDER_NO), 38, '0'), lpad(to_char(inv.ORDER_LINE_NO),38,'0'), to_char(inv.ORDER_TYPE))) as billing_key
 ,md5(concat('CIS CA', to_char(matl.vpl_no))) as profit_center_master_key
 ,md5(concat('CIS_CA', to_char(inv.cust_no))) as customer_key
