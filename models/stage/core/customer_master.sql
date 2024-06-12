@@ -22,8 +22,8 @@ with cust_xref as (
         left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_INFO_VIEW_US') }} cust
         --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_INFO_VIEW_US cust
           on xref.cust_no = cust.cust_no
-        where rn = 1       
-
+        where rn = 1
+          
      union all
      
         select xref.*, to_char(cust.mcust_no) mcust_no
@@ -39,7 +39,9 @@ with cust_xref as (
         left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_INFO_VIEW_CA') }} cust
         --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_INFO_VIEW_CA cust
           on xref.cust_no = cust.cust_no
-        where rn = 1)
+        where rn = 1
+          and xref not in('9790901', '9454596')        
+        )
         
 
      ,cust68 as (
@@ -49,8 +51,8 @@ with cust_xref as (
             case when length("/BIC/TNECUSNU") = 0 then "/BIC/TNSERTRM1"
               else "/BIC/TNECUSNU"
             end as TNECUSNU
-         from {{ source('us_cdp_bw_68','TNCBPCUST') }} 
-         --from ANALYTICS.EDW_SAP_BW_US_68.TNCBPCUST
+         --from {{ source('us_cdp_bw_68','TNCBPCUST') }} 
+         from ANALYTICS.EDW_SAP_BW_US_68.TNCBPCUST
          where SOURSYSTEM = 'A2'
                )
 
@@ -80,13 +82,11 @@ NULL AS LAST_LCS_STAGE_UPDATE,
 NULL AS LAST_LCS_STAGE_TEXT_CISCO,
 NULL AS LAST_LCS_STAGE_UPDATE_CISCO,
 NULL AS TS_CUST_ACCOUNT,
-
 case
   when t1.tnsaleorg in('1001', 'A001', 'US33')
     then nvl(cust_xref.mcust_no, nvl(cust46."/BIC/TUCHIEC03", cust68."/BIC/TNGLBCUST")) 
   else   nvl(cust_xref.mcust_no, cust68."/BIC/TNGLBCUST")
 end as GROUPKEY,
-
 NULL AS DNB_DUNS_NBR,
 NULL AS DNB_CONFIDENCE_CODE,
 NULL AS DNB_NAME_SCORE,
@@ -386,8 +386,8 @@ T2.TUCDIVISN AS DIVISION,
 T2.TUCDISTRN AS DISTR_CHANNEL,
 T1.TUCCUSTOR AS RESELLER_ID,
 T1.TUCCUSTOR AS RESELLER_ID_46,
-NVL(cust_xref.mcust_no, T1.TUCCUSTOR) AS RESELLER_ID_COMBINED,  
-NVL(T4.TNCBPCUST, T1.TUCCUSTOR) as RESELLER_ID_68,
+NVL(cust_xref.mcust_no, T1.TUCCUSTOR) AS RESELLER_ID_COMBINED,
+NVL(cust_xref.mcust_no, T1.TUCCUSTOR) as RESELLER_ID_68,
 
 CASE 
     WHEN T2.TUCHIEA03 IN ('0030001061') THEN TRUE 
@@ -698,30 +698,33 @@ JOIN  {{ source('us_cdp','TUCCUSTSS_VIEW') }}    AS T2
   AND T2.TUCDISTRN = '00'
   AND T2.TUCDIVISN = '10'
   AND T2.TUCSALESG = '0100'
-JOIN   {{ source('us_cdp_bw_46','TUCCUSTCC') }} AS T3 
---JOIN    ANALYTICS.EDW_SAP_BW_US_46.TUCCUSTCC AS T3 
+--JOIN   {{ source('us_cdp_bw_46','TUCCUSTCC') }} AS T3 
+JOIN    ANALYTICS.EDW_SAP_BW_US_46.TUCCUSTCC AS T3 
   ON T2.TUCCUSTSS = LTRIM(T3."/BIC/TUCCUSTCC") 
   AND T2.SOURSYSTEM = T3.SOURSYSTEM
   AND T2.TUCSALESG = T3."/BIC/TUCCOMPCE"
 
-LEFT JOIN  {{source('us_cdp_bw_46','TUCINDUSY_TXT') }}  AS T9
---LEFT JOIN  ANALYTICS.EDW_SAP_BW_US_46.TUCINDUSY_TXT  AS T9
+--LEFT JOIN  {{source('us_cdp_bw_46','TUCINDUSY_TXT') }}  AS T9
+LEFT JOIN  ANALYTICS.EDW_SAP_BW_US_46.TUCINDUSY_TXT  AS T9
   ON T1.TUCINDUSY = T9."/BIC/TUCINDUSY"
   
-LEFT JOIN (SELECT DISTINCT TUCSALESG,TNCBPCUST,TNECUSNU 
-           FROM  {{source('us_cdp','CUSTOMERMASTER_BASE_68') }} )  AS T4
-           --FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68)  AS T4 
-  ON T1.TUCCUSTOR = T4.TNECUSNU
-  AND T2.TUCSALESG = T4.TUCSALESG
+-- LEFT JOIN (SELECT DISTINCT TUCSALESG,TNCBPCUST,TNECUSNU,
+--                   ROW_NUMBER() OVER (PARTITION BY TNCBPCUST ORDER BY CREATEDON desc) as rn 
+--            --FROM  {{source('us_cdp','CUSTOMERMASTER_BASE_68') }} )  AS T4
+--            FROM  US_DATAPRACTICE.CDP.CUSTOMERMASTER_BASE_68)  AS T4 
+--   ON T1.TUCCUSTOR = T4.TNECUSNU
+--   AND T2.TUCSALESG = T4.TUCSALESG
+  
 LEFT JOIN cust_xref
   ON ltrim(T1.TUCCUSTOR,0) = cust_xref.xref
--- left join US_DATAPRACTICE.PACE.CUSTOMER_LIFECYCLE CL  
---   on t1.TUCHIEC03 = cl.groupkey
---   on cl.company_code = 'US01'
+  
+-- -- left join US_DATAPRACTICE.PACE.CUSTOMER_LIFECYCLE CL  
+-- --   on t1.TUCHIEC03 = cl.groupkey
+-- --   on cl.company_code = 'US01'
   
 WHERE T1.SOURSYSTEM = 'A3'
 
--- PART 3
+--PART 3
 union all
 
 select 
@@ -732,18 +735,19 @@ md5(concat('CIS_US',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , NULL as DIVISION
 , 0 as DISTR_CHANNEL
 , to_char(CUST.CUST_NO) as RESELLER_ID
-, case when substr(cust_xref.xref,1,2) = '38'
-   and length(cust_xref.xref) = 8
-    then to_char(cust_xref.xref)
-    else to_char(CUST.CUST_NO)
-  end as RESELLER_ID_46
-, to_char(CUST.MCUST_NO) as RESELLER_ID_COMBINED
-, case when substr(cust_xref.xref,1,1) = '9'
-   and length(cust_xref.xref) = 7
-    then to_char(cust_xref.xref)
-    else to_char(CUST.CUST_NO)
-  end as RESELLER_ID_68
-
+-- , case when substr(cust_xref.xref,1,2) = '38'
+--    and length(cust_xref.xref) = 8
+--     then to_char(cust_xref.xref)
+--     else to_char(CUST.CUST_NO)
+--   end as RESELLER_ID_46
+ , to_char(CUST.MCUST_NO) as RESELLER_ID_COMBINED
+-- , case when substr(cust_xref.xref,1,1) = '9'
+--    and length(cust_xref.xref) = 7
+--     then to_char(cust_xref.xref)
+--     else to_char(CUST.CUST_NO)
+--   end as RESELLER_ID_68
+, to_char(CUST.CUST_NO) as RESELLER_ID_46
+, to_char(CUST.CUST_NO) as RESELLER_ID_68
 , CASE
     WHEN IS_DISCONTINUED = 'Y' THEN TRUE
     ELSE FALSE
@@ -1054,9 +1058,6 @@ left join {{ source('us_cdp_cis_us','DIM_PUB_CUSTOMER_CREDIT_INFO_US') }}  as cr
 --left join ANALYTICS.EDW_CIS_US.DIM_PUB_CUSTOMER_CREDIT_INFO_US  as creditinfo
   on cust.cust_no = creditinfo.cust_no
 
-left join cust_xref 
-  on cust.cust_no = cust_xref.cust_no
-  
 Union All
 
 select 
@@ -1067,18 +1068,19 @@ md5(concat('CIS_CA',to_char(CUST.CUST_NO))) as CUSTOMER_MASTER_KEY
 , NULL as DIVISION
 , 0 as DISTR_CHANNEL
 , to_char(CUST.CUST_NO) as RESELLER_ID
-, case when substr(cust_xref.xref,1,2) = '38'
-   and length(cust_xref.xref) = 8
-    then to_char(cust_xref.xref)
-    else to_char(CUST.CUST_NO)
-  end as RESELLER_ID_46
-, to_char(CUST.MCUST_NO) as RESELLER_ID_COMBINED
-, case when substr(cust_xref.xref,1,1) = '9'
-   and length(cust_xref.xref) = 7
-    then to_char(cust_xref.xref)
-    else to_char(CUST.CUST_NO)
-  end as RESELLER_ID_68
-  
+-- , case when substr(cust_xref.xref,1,2) = '38'
+--    and length(cust_xref.xref) = 8
+--     then to_char(cust_xref.xref)
+--     else to_char(CUST.CUST_NO)
+--   end as RESELLER_ID_46
+ , to_char(CUST.MCUST_NO) as RESELLER_ID_COMBINED
+-- , case when substr(cust_xref.xref,1,1) = '9'
+--    and length(cust_xref.xref) = 7
+--     then to_char(cust_xref.xref)
+--     else to_char(CUST.CUST_NO)
+--   end as RESELLER_ID_68
+, to_char(CUST.CUST_NO) as RESELLER_ID_46
+, to_char(CUST.CUST_NO) as RESELLER_ID_68
 , CASE
     WHEN IS_DISCONTINUED = 'Y' THEN TRUE
     ELSE FALSE
@@ -1386,5 +1388,3 @@ left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_XREF_CA') }} as xref
 left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_CREDIT_INFO_CA') }}  as creditinfo
 --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_CREDIT_INFO_CA  as creditinfo
   on cust.cust_no = creditinfo.cust_no
-left join cust_xref 
-  on cust.cust_no = cust_xref.cust_no
