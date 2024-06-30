@@ -43,7 +43,8 @@ bklg_68 as (select "/BIC/TND_NUMB", S_ORD_ITEM, "/BIC/TNOVRL_ST",
                 sum("/BIC/TNXRSLDC") "/BIC/TNXRSLDC"
          from {{ source('us_cdp_bw_68','TNBCIO01') }}
          --from ANALYTICS.EDW_SAP_BW_US_68.TNBCIO01 
-         where "/BIC/AATRANTYP" = '004163'
+         where "/BIC/AATRANTYP" = '004163' 
+         and "/BIC/TNOVRL_ST" <> 'C'
          group by all
         )
 
@@ -156,8 +157,8 @@ Left join {{ source('us_cdp_bw_46','TUCCUSTOR') }}   as t7
    on t1."/BIC/TUCSOLDTO" = t7."/BIC/TUCCUSTOR" 
   and t7.SOURSYSTEM = 'A3'
   and t7."/BIC/TUCACCNTP" <> 'ZIC'
-Left join cust
-  on t1."/BIC/TUCSOLDTO" = cust.TUCCUSTSS  
+--Left join cust
+ -- on t1."/BIC/TUCSOLDTO" = cust.TUCCUSTSS  
 Left join {{ ref('profit_center_master') }}  pc
 --left join US_DATAPRACTICE.CORE.PROFIT_CENTER_MASTER  pc
   on t1."/BIC/TUCPROFIR" = pc.PROFIT_CENTER  
