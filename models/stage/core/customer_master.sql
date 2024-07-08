@@ -1388,3 +1388,6 @@ left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_XREF_CA') }} as xref
 left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_CREDIT_INFO_CA') }}  as creditinfo
 --left join ANALYTICS.EDW_CIS_CA.DIM_PUB_CUSTOMER_CREDIT_INFO_CA  as creditinfo
   on cust.cust_no = creditinfo.cust_no
+
+
+

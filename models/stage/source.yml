@@ -113,7 +113,12 @@ sources:
      - name: SAP_68_ELECT_COMM_GRP_XREF 
      
      
-
+  - name: us_cdp_dev
+    database: "US_DATAPRACTICE_DEV"
+    schema: "PACE"
+    tables:
+     - name: PACE_LASTLIFECYCLESTAGE 
+     - name: LIFECYCLE 
      
      
 
