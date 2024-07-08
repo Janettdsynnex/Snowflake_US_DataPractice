@@ -54,3 +54,4 @@ models:
             materialized: table
             tags: ["core_stage"]
             schema: "core"  
+ 
