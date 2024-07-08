@@ -38,21 +38,29 @@ join (select tnsaleorg,tnecusnu, max(createdon) createdon
   and cust.createdon = max_cust.createdon
 ),
 
-bklg_68 as (select "/BIC/TND_NUMB", S_ORD_ITEM, "/BIC/TNOVRL_ST",
-                "/BIC/TNLFSTA", "/BIC/TNLFGSA", sum("/BIC/TNOMENG") "/BIC/TNOMENG",
-                sum("/BIC/TNXRSLDC") "/BIC/TNXRSLDC"
-         from {{ source('us_cdp_bw_68','TNBCIO01') }}
-         --from ANALYTICS.EDW_SAP_BW_US_68.TNBCIO01 
-         where "/BIC/AATRANTYP" = '004163' 
-         and "/BIC/TNOVRL_ST" <> 'C'
-         group by all
+bklg_68 as (select "/BIC/TND_NUMB", 
+                    S_ORD_ITEM, 
+                    case when "/BIC/TNOVRL_ST" = 'B'
+                      then 'A'
+                      else "/BIC/TNOVRL_ST"
+                    end as "/BIC/TNOVRL_ST",
+                    "/BIC/TNLFSTA", 
+                    "/BIC/TNLFGSA", 
+                    sum("/BIC/TNOMENG") "/BIC/TNOMENG",
+                    sum("/BIC/TNXRSLDC") "/BIC/TNXRSLDC"
+            from {{ source('us_cdp_bw_68','TNBCIO01') }}
+             --from ANALYTICS.EDW_SAP_BW_US_68.TNBCIO01 
+             where "/BIC/AATRANTYP" = '004163'
+               and "/BIC/TNOVRL_ST" <> 'C'              
+             group by all
         )
+
 
         
 select 
 md5(concat(t1."/BIC/TUCDOCNUR", t1."/BIC/TUCSORDIX", t1.SOURSYSTEM)) as PKEY_SALES_ORDER_LISTING,
 md5(t1."/BIC/TUCPROFIR") as FKEY_PROFIT_CENTER_MASTER,
-md5(concat(t1.SOURSYSTEM, t1."/BIC/TUCSALESG", t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as FKEY_CUSTOMER_MASTER,
+md5(concat(t1.SOURSYSTEM, 'US01', t1."/BIC/TUCDIVISN", t1."/BIC/TUCDISTRN", t1."/BIC/TUCSOLDTO")) as FKEY_CUSTOMER_MASTER,
 md5(concat(t1.SOURSYSTEM,t1."/BIC/TUCMATERL", t1."/BIC/TUCSALESG", t1."/BIC/TUCDISTRN")) as FKEY_MATERIAL_MASTER,
 t1."SOURSYSTEM" as SOURSYSTEM,
 'US01' as COMPANY_CODE,
