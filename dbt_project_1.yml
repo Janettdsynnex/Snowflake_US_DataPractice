@@ -35,23 +35,30 @@ quoting:
 # In this example config, we tell dbt to build all models in the example/ directory
 # as tables. These settings can be overridden in the individual model files
 # using the `{{ config(...) }}` macro.
+
+# Define configurations for your models
 models:
+  +persist_docs:
+    relation: true
+    columns: true
+  techdata:
+    # Applies to all files under models/techdata/
+  us_datapractice:
+    tags: ["us_datapractice"]
+    stage:
+      cdp:
+        materialized: view
+        tags: ["cdp_stage"]
+        schema: "cdp"
+      core:
+        materialized: table
+        tags: ["core_stage"]
+        schema: "core"
+
+# Define configurations for your snapshots
+snapshots:
+  us_datapractice:
     +persist_docs:
-        relation: true
-        columns: true
-    techdata:
-      # Applies to all files under models/example/
-      stage:
-        cdp:
-                materialized: view
-                tags: ["cdp_usdatapractice","cdp_stage"]
-                database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
-                database: "us_datapractice"
-                schema: "cdp"
-               
-        core:
-               materialized: table
-               tags: ["cdp_usdatapractice","core_stage",]
-               database: "{% if var('env').lower() == 'dev' %} us_datapractice_dev {% else %} us_datapractice {% endif %}"
-               database: "us_datapractice"
-               schema: "core"  
+      relation: true
+      columns: true
+    #snapshot.yml: {}

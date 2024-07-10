@@ -54,4 +54,19 @@ models:
             materialized: table
             tags: ["core_stage"]
             schema: "core"  
- 
+
+models:
+  us_datapractice:
+    core:
+      customer_master:
+        +post-hook:
+          - call UPDATE_CUSTOMER_MASTER();
+
+
+# Define configurations for your snapshots
+#snapshots:
+    #us_datapractice:
+      #+persist_docs:
+       #relation: true
+       #columns: true
+       #snapshot.yml: {}

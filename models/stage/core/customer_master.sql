@@ -1391,3 +1391,4 @@ left join {{ source('ca_cdp_cis_ca','DIM_PUB_CUSTOMER_CREDIT_INFO_CA') }}  as cr
 
 
 
+
